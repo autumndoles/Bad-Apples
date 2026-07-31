@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bad Apples+ Multiplayer</title>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    color: white;
+    text-align: center;
+    background: linear-gradient(
+        to right,
+        #c62828 0%,
+        #c62828 50%,
+        #2e7d32 50%,
+        #2e7d32 100%
+    );
+}
+
+button,
+input,
+select {
+    margin: 5px;
+    padding: 10px;
+    font-size: 15px;
+}
+
+button {
+    cursor: pointer;
+    border: 1px solid #777;
+    border-radius: 5px;
+    background: #eee;
+    color: #111;
+}
+
+button:hover {
+    background: #ddd;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.box {
+    width: min(95%, 800px);
+    margin: 15px auto;
+    padding: 20px;
+    background: #1c1c1c;
+    border: 1px solid #555;
+    border-radius: 8px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.danger {
+    color: #ff7777;
+}
+
+.good {
+    color: #77ff77;
+}
+
+.warning {
+    color: #ffcc66;
+}
+
+.small {
+    font-size: 12px;
+    color: #bbb;
+}
+
+.playerCard {
+    border: 1px solid #555;
+    padding: 12px;
+    margin: 7px 0;
+    background: #252525;
+    border-radius: 5px;
+}
+
+.hostCard {
+    border-color: #ffcc66;
+}
+
+#lobbyPlayers {
+    max-width: 600px;
+    margin: 15px auto;
+}
+
+#chatMessages {
+    height: 250px;
+    overflow-y: auto;
+    text-align: left;
+    background: #111;
+    border: 1px solid #555;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.chatMessage {
+    padding: 6px;
+    border-bottom: 1px solid #333;
+}
+
+.chatName {
+    font-weight: bold;
+}
+
+.chatSystem {
+    color: #ffcc66;
+    font-style: italic;
+}
+
+.chatControls {
+    display: flex;
+    gap: 5px;
+}
+
+.chatControls input {
+    flex: 1;
+    margin: 0;
+}
+
+.gameCode {
+    font-size: 36px;
+    font-weight: bold;
+    letter-spacing: 8px;
+    color: #ffcc66;
+    background: #111;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px auto;
+    max-width: 300px;
+}
+
+.roleBox {
+    background: #111;
+    border: 2px solid #555;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 500px;
+    border-radius: 8px;
+}
+
+.answerButton {
+    display: block;
+    width: min(90%, 500px);
+    margin: 8px auto;
+}
+
+.secretBox {
+    background: #111;
+    border: 1px solid #555;
+    padding: 15px;
+    margin: 15px auto;
+    max-width: 500px;
+}
+
+#gamePlayers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.gamePlayer {
+    background: #252525;
+    border: 1px solid #555;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.statusMessage {
+    padding: 10px;
+    margin: 10px;
+    background: #292929;
+    border-radius: 5px;
+}
+
+#eventLog {
+    max-height: 180px;
+    overflow: auto;
+    text-align: left;
+    background: #111;
+    padding: 8px;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+
+.botControls {
+    background: #171717;
+    border: 1px solid #666;
+    padding: 15px;
+    margin: 15px auto;
+    border-radius: 6px;
+    max-width: 500px;
+}
+
+.botControls h3 {
+    margin-top: 0;
+}
+
+.botBadge {
+    color: #66ccff;
+    font-size: 12px;
+}
+
+.hostBadge {
+    color: #ffcc66;
+    font-size: 12px;
+}
+
+.spectatorBadge {
+    color: #cc99ff;
+    font-size: 12px;
+}
+
+@media(max-width:600px) {
+    body {
+        background: #2e7d32;
+    }
+
+    .gameCode {
+        font-size: 28px;
+    }
+
+    .chatControls {
+        flex-direction: column;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>🍎 Bad Apples+</h1>
+
+<!-- CONNECTION -->
+
+<div class="box" id="connectionBox">
+    <h2>Connecting...</h2>
+    <p id="connectionStatus">Connecting to server...</p>
+</div>
+
+<!-- MAIN MENU -->
+
+<div class="box hidden" id="mainMenu">
+
+```
+<h2>Multiplayer</h2>
+
+<p>
+    Create a game or join an existing game.
+</p>
+
+<button onclick="showCreateGame()">
+    Create Game
+</button>
+
+<button onclick="showJoinGame()">
+    Join Game
+</button>
+```
+
+</div>
+
+<!-- CREATE GAME -->
+
+<div class="box hidden" id="createGame">
+
+```
+<h2>Create Game</h2>
+
+<label>Your Name</label>
+
+<br>
+
+<input
+    id="hostName"
+    maxlength="20"
+    placeholder="Enter your name"
+>
+
+<br>
+
+<label>Game Mode</label>
+
+<br>
+
+<select id="gameMode">
+    <option value="classic">
+        Classic Mode
+    </option>
+
+    <option value="quick">
+        Quick Play
+    </option>
+</select>
+
+<br>
+
+<label>Host Playing?</label>
+
+<br>
+
+<select id="hostPlaying">
+    <option value="yes">
+        Yes — I want to play
+    </option>
+
+    <option value="no">
+        No — I want to host only
+    </option>
+</select>
+
+<br>
+
+<label>Maximum Players</label>
+
+<br>
+
+<input
+    id="maxPlayers"
+    type="number"
+    min="4"
+    max="20"
+    value="10"
+>
+
+<br>
+
+<button onclick="createGame()">
+    Create Game
+</button>
+
+<button onclick="returnToMenu()">
+    Back
+</button>
+```
+
+</div>
+
+<!-- JOIN GAME -->
+
+<div class="box hidden" id="joinGame">
+
+```
+<h2>Join Game</h2>
+
+<input
+    id="joinName"
+    maxlength="20"
+    placeholder="Your name"
+>
+
+<br>
+
+<input
+    id="gameCodeInput"
+    maxlength="6"
+    placeholder="Game Code"
+    style="text-transform:uppercase"
+>
+
+<br>
+
+<button onclick="joinGame()">
+    Join Game
+</button>
+
+<button onclick="returnToMenu()">
+    Back
+</button>
+```
+
+</div>
+
+<!-- LOBBY -->
+
+<div class="box hidden" id="lobby">
+
+```
+<h2>Game Lobby</h2>
+
+<p>
+    Share this code with your friends:
+</p>
+
+<div class="gameCode" id="displayGameCode">
+    ------
+</div>
+
+<p id="lobbyStatus">
+    Waiting for players...
+</p>
+
+<hr>
+
+<h3>Players</h3>
+
+<div id="lobbyPlayers"></div>
+
+<!-- BOT CONTROLS -->
+
+<div id="botControls" class="botControls hidden">
+
+    <h3>🤖 Bot Controls</h3>
+
+    <p class="small">
+        Add bots if you don't have enough human players.
+        Bots count toward the maximum player limit.
+    </p>
+
+    <label>
+        Number of Bots
+    </label>
+
+    <br>
+
+    <input
+        id="botCount"
+        type="number"
+        min="1"
+        max="20"
+        value="1"
+    >
+
+    <br>
+
+    <button onclick="addBots()">
+        Add Bots
+    </button>
+
+    <button onclick="removeBots()">
+        Remove Bots
+    </button>
+
+</div>
+
+<!-- HOST CONTROLS -->
+
+<div id="hostControls" class="hidden">
+
+    <hr>
+
+    <h3>Host Controls</h3>
+
+    <button onclick="startMultiplayerGame()">
+        Start Game
+    </button>
+
+    <button onclick="endGameForEveryone()">
+        End Game
+    </button>
+
+</div>
+
+<hr>
+
+<h3>Chat</h3>
+
+<div id="chatMessages"></div>
+
+<div id="chatControls" class="chatControls">
+
+    <input
+        id="chatInput"
+        maxlength="300"
+        placeholder="Type a message..."
+        onkeydown="handleChatKey(event)"
+    >
+
+    <button onclick="sendChatMessage()">
+        Send
+    </button>
+
+</div>
+
+<div id="spectatorChatNotice" class="small hidden">
+    Spectator hosts cannot send chat messages.
+    You can moderate the chat below.
+</div>
+
+<div id="moderationControls" class="hidden">
+
+    <hr>
+
+    <h3>Chat Moderation</h3>
+
+    <button onclick="clearChat()">
+        Clear Chat
+    </button>
+
+</div>
+```
+
+</div>
+
+<!-- ROLE REVEAL -->
+
+<div class="box hidden" id="roleReveal">
+
+```
+<h2>Your Role</h2>
+
+<div id="myRoleBox" class="roleBox"></div>
+
+<p id="roleExtraInfo"></p>
+
+<button onclick="continueAfterRole()">
+    Continue
+</button>
+```
+
+</div>
+
+<!-- HOST SPECTATOR ROLE VIEW -->
+
+<div class="box hidden" id="hostRoleView">
+
+```
+<h2>Host Role Overview</h2>
+
+<p>
+    You are hosting as a spectator.
+    You can see the roles of all players.
+</p>
+
+<div id="allRoles"></div>
+
+<button onclick="closeHostRoleView()">
+    Continue
+</button>
+```
+
+</div>
+
+<!-- GAME -->
+
+<div class="box hidden" id="game">
+
+```
+<h2 id="gameStatus">
+    Game Starting
+</h2>
+
+<div id="gamePlayers"></div>
+
+<hr>
+
+<h3 id="gameQuestion">
+    Waiting for question...
+</h3>
+
+<div id="gameContent"></div>
+
+<div id="gameEventLog"></div>
+```
+
+</div>
+
+<!-- GAME OVER -->
+
+<div class="box hidden" id="gameOver">
+
+```
+<h2>Game Over</h2>
+
+<h3 id="winnerMessage"></h3>
+
+<div id="finalRoles"></div>
+
+<button onclick="location.reload()">
+    Return to Main Menu
+</button>
+```
+
+</div>
+
+<script>
+
+/* =========================================================
+SOCKET.IO
+========================================================= */
+
+const socket = io();
+
+let connected = false;
+
+socket.on("connect", () => {
+
+    connected = true;
+
+    hide("connectionBox");
+
+    show("mainMenu");
+
+});
+
+socket.on("disconnect", () => {
+
+    connected = false;
+
+    show("connectionBox");
+
+    hide("mainMenu");
+
+    document.getElementById(
+        "connectionStatus"
+    ).innerText =
+        "Disconnected from server.";
+
+});
+
+/* =========================================================
+LOCAL STATE
+========================================================= */
+
+let myName = "";
+
+let myRole = null;
+
+let myGameCode = null;
+
+let isHost = false;
+
+let isPlaying = false;
+
+let isSpectatorHost = false;
+
+let currentPlayers = [];
+
+let currentGameState = null;
+
+/* =========================================================
+UTILITY
+========================================================= */
+
+function hide(id) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+        element.classList.add("hidden");
+    }
+
+}
+
+function show(id) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+        element.classList.remove("hidden");
+    }
+
+}
+
+function hideAllScreens() {
+
+    [
+        "mainMenu",
+        "createGame",
+        "joinGame",
+        "lobby",
+        "roleReveal",
+        "hostRoleView",
+        "game",
+        "gameOver"
+    ].forEach(hide);
+
+}
+
+function escapeHTML(text) {
+
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+/* =========================================================
+MENU
+========================================================= */
+
+function showCreateGame() {
+
+    hideAllScreens();
+
+    show("createGame");
+
+}
+
+function showJoinGame() {
+
+    hideAllScreens();
+
+    show("joinGame");
+
+}
+
+function returnToMenu() {
+
+    hideAllScreens();
+
+    show("mainMenu");
+
+}
+
+/* =========================================================
+CREATE GAME
+========================================================= */
+
+function createGame() {
+
+    const name =
+        document.getElementById(
+            "hostName"
+        ).value.trim();
+
+    if (!name) {
+
+        alert(
+            "Please enter your name."
+        );
+
+        return;
+
+    }
+
+    myName = name;
+
+    isHost = true;
+
+    isPlaying =
+        document.getElementById(
+            "hostPlaying"
+        ).value === "yes";
+
+    isSpectatorHost =
+        !isPlaying;
+
+    const mode =
+        document.getElementById(
+            "gameMode"
+        ).value;
+
+    const maxPlayers =
+        Number(
+            document.getElementById(
+                "maxPlayers"
+            ).value
+        );
+
+    socket.emit(
+        "createGame",
+        {
+            name,
+            mode,
+            maxPlayers,
+            hostPlaying: isPlaying
+        }
+    );
+
+}
+
+/* =========================================================
+JOIN GAME
+========================================================= */
+
+function joinGame() {
+
+    const name =
+        document.getElementById(
+            "joinName"
+        ).value.trim();
+
+    const code =
+        document.getElementById(
+            "gameCodeInput"
+        ).value
+        .trim()
+        .toUpperCase();
+
+    if (!name) {
+
+        alert(
+            "Please enter your name."
+        );
+
+        return;
+
+    }
+
+    if (!code) {
+
+        alert(
+            "Please enter a game code."
+        );
+
+        return;
+
+    }
+
+    myName = name;
+
+    isHost = false;
+
+    isPlaying = true;
+
+    isSpectatorHost = false;
+
+    socket.emit(
+        "joinGame",
+        {
+            name,
+            gameCode: code
+        }
+    );
+
+}
+
+/* =========================================================
+GAME CREATED
+========================================================= */
+
+socket.on(
+    "gameCreated",
+    data => {
+
+        myGameCode =
+            data.gameCode;
+
+        showLobby();
+
+    }
+);
+
+/* =========================================================
+GAME JOINED
+========================================================= */
+
+socket.on(
+    "gameJoined",
+    data => {
+
+        myGameCode =
+            data.gameCode;
+
+        showLobby();
+
+    }
+);
+
+/* =========================================================
+LOBBY
+========================================================= */
+
+function showLobby() {
+
+    hideAllScreens();
+
+    show("lobby");
+
+    document.getElementById(
+        "displayGameCode"
+    ).innerText =
+        myGameCode;
+
+    if (isHost) {
+
+        show("hostControls");
+
+        show("moderationControls");
+
+        show("botControls");
+
+    }
+
+    if (isSpectatorHost) {
+
+        hide("chatControls");
+
+        show("spectatorChatNotice");
+
+    }
+
+}
+
+/* =========================================================
+LOBBY PLAYER UPDATE
+========================================================= */
+
+socket.on(
+    "lobbyUpdate",
+    data => {
+
+        currentPlayers =
+            data.players || [];
+
+        renderLobbyPlayers();
+
+        document.getElementById(
+            "lobbyStatus"
+        ).innerText =
+            currentPlayers.length +
+            " player(s) in lobby.";
+
+    }
+);
+
+function renderLobbyPlayers() {
+
+    const box =
+        document.getElementById(
+            "lobbyPlayers"
+        );
+
+    box.innerHTML = "";
+
+    currentPlayers.forEach(
+        player => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "playerCard";
+
+            let text =
+                escapeHTML(
+                    player.name ||
+                    player
+                );
+
+            if (
+                player.isHost
+            ) {
+
+                text +=
+                    ' <span class="hostBadge">👑 Host</span>';
+
+            }
+
+            if (
+                player.isBot
+            ) {
+
+                text +=
+                    ' <span class="botBadge">🤖 Bot</span>';
+
+            }
+
+            if (
+                player.isPlaying === false
+            ) {
+
+                text +=
+                    ' <span class="spectatorBadge">👁️ Spectator</span>';
+
+            }
+
+            div.innerHTML =
+                text;
+
+            if (
+                isHost &&
+                player.name !== myName &&
+                !player.isBot
+            ) {
+
+                const kick =
+                    document.createElement(
+                        "button"
+                    );
+
+                kick.innerText =
+                    "Kick";
+
+                kick.onclick =
+                    () =>
+                        kickPlayer(
+                            player.id
+                        );
+
+                div.appendChild(
+                    kick
+                );
+
+            }
+
+            box.appendChild(
+                div
+            );
+
+        }
+    );
+
+}
+
+/* =========================================================
+BOT CONTROLS
+========================================================= */
+
+function addBots() {
+
+    if (!isHost) return;
+
+    const count =
+        Number(
+            document.getElementById(
+                "botCount"
+            ).value
+        );
+
+    if (
+        !Number.isInteger(count) ||
+        count < 1
+    ) {
+
+        alert(
+            "Enter a valid number of bots."
+        );
+
+        return;
+
+    }
+
+    socket.emit(
+        "addBots",
+        {
+            gameCode:
+                myGameCode,
+            count
+        }
+    );
+
+}
+
+function removeBots() {
+
+    if (!isHost) return;
+
+    const count =
+        Number(
+            document.getElementById(
+                "botCount"
+            ).value
+        );
+
+    if (
+        !Number.isInteger(count) ||
+        count < 1
+    ) {
+
+        alert(
+            "Enter a valid number of bots."
+        );
+
+        return;
+
+    }
+
+    socket.emit(
+        "removeBots",
+        {
+            gameCode:
+                myGameCode,
+            count
+        }
+    );
+
+}
+
+/* =========================================================
+HOST CONTROLS
+========================================================= */
+
+function kickPlayer(id) {
+
+    if (!isHost) return;
+
+    socket.emit(
+        "kickPlayer",
+        {
+            gameCode:
+                myGameCode,
+            playerId:
+                id
+        }
+    );
+
+}
+
+function startMultiplayerGame() {
+
+    if (!isHost) return;
+
+    socket.emit(
+        "startGame",
+        {
+            gameCode:
+                myGameCode
+        }
+    );
+
+}
+
+function endGameForEveryone() {
+
+    if (!isHost) return;
+
+    if (
+        confirm(
+            "End this game for everyone?"
+        )
+    ) {
+
+        socket.emit(
+            "endGame",
+            {
+                gameCode:
+                    myGameCode
+            }
+        );
+
+    }
+
+}
+
+/* =========================================================
+CHAT
+========================================================= */
+
+function sendChatMessage() {
+
+    if (
+        isSpectatorHost
+    ) {
+
+        return;
+
+    }
+
+    const input =
+        document.getElementById(
+            "chatInput"
+        );
+
+    const message =
+        input.value.trim();
+
+    if (!message) return;
+
+    socket.emit(
+        "chatMessage",
+        {
+            gameCode:
+                myGameCode,
+            message
+        }
+    );
+
+    input.value = "";
+
+}
+
+function handleChatKey(event) {
+
+    if (
+        event.key === "Enter"
+    ) {
+
+        sendChatMessage();
+
+    }
+
+}
+
+socket.on(
+    "chatMessage",
+    data => {
+
+        addChatMessage(
+            data
+        );
+
+    }
+);
+
+function addChatMessage(data) {
+
+    const box =
+        document.getElementById(
+            "chatMessages"
+        );
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.className =
+        "chatMessage";
+
+    div.innerHTML =
+        `<span class="chatName">
+        ${escapeHTML(data.name)}:
+        </span>
+        ${escapeHTML(data.message)}`;
+
+    box.appendChild(
+        div
+    );
+
+    box.scrollTop =
+        box.scrollHeight;
+
+}
+
+function clearChat() {
+
+    if (!isHost) return;
+
+    socket.emit(
+        "clearChat",
+        {
+            gameCode:
+                myGameCode
+        }
+    );
+
+}
+
+socket.on(
+    "chatCleared",
+    () => {
+
+        document.getElementById(
+            "chatMessages"
+        ).innerHTML =
+            `<div class="chatSystem">
+            Chat cleared by host.
+            </div>`;
+
+    }
+);
+
+/* =========================================================
+KICKED
+========================================================= */
+
+socket.on(
+    "kicked",
+    () => {
+
+        alert(
+            "You were removed from the game by the host."
+        );
+
+        location.reload();
+
+    }
+);
+
+/* =========================================================
+GAME START
+========================================================= */
+
+socket.on(
+    "gameStarted",
+    data => {
+
+        currentGameState =
+            data;
+
+        hideAllScreens();
+
+        show("game");
+
+        currentPlayers =
+            data.players ||
+            currentPlayers;
+
+        renderGamePlayers();
+
+    }
+);
+
+function renderGamePlayers() {
+
+    const box =
+        document.getElementById(
+            "gamePlayers"
+        );
+
+    box.innerHTML = "";
+
+    currentPlayers.forEach(
+        player => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "gamePlayer";
+
+            let text =
+                escapeHTML(
+                    player.name ||
+                    player
+                );
+
+            if (
+                player.isBot
+            ) {
+
+                text +=
+                    " 🤖";
+
+            }
+
+            div.innerHTML =
+                text;
+
+            box.appendChild(
+                div
+            );
+
+        }
+    );
+
+}
+
+/* =========================================================
+ROLE REVEAL
+========================================================= */
+
+socket.on(
+    "roleAssigned",
+    data => {
+
+        myRole =
+            data.role;
+
+        hideAllScreens();
+
+        show("roleReveal");
+
+        let roleClass =
+            myRole === "Bad Apple"
+            ? "danger"
+            : myRole === "Banana"
+            ? "warning"
+            : "good";
+
+        document.getElementById(
+            "myRoleBox"
+        ).innerHTML = `
+
+            <h2 class="${roleClass}">
+                ${escapeHTML(myRole)}
+            </h2>
+
+            <p>
+                ${getRoleDescription(myRole)}
+            </p>
+
+        `;
+
+    }
+);
+
+function getRoleDescription(role) {
+
+    if (
+        role === "Bad Apple"
+    ) {
+
+        return "Work secretly against the Red Apples.";
+
+    }
+
+    if (
+        role === "Banana"
+    ) {
+
+        return "You can see the roles of the other players and their shielding information. Your hidden allegiance is assigned by the game.";
+
+    }
+
+    return "Find and eliminate all Bad Apples.";
+
+}
+
+/* =========================================================
+HOST ROLE OVERVIEW
+========================================================= */
+
+socket.on(
+    "hostRoleOverview",
+    data => {
+
+        if (
+            !isSpectatorHost
+        ) return;
+
+        hideAllScreens();
+
+        show("hostRoleView");
+
+        const box =
+            document.getElementById(
+                "allRoles"
+            );
+
+        box.innerHTML = "";
+
+        data.players.forEach(
+            player => {
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+                div.className =
+                    "playerCard";
+
+                div.innerHTML =
+                    `<strong>
+                    ${escapeHTML(player.name)}
+                    </strong>
+                    <br>
+                    Role:
+                    ${escapeHTML(player.role)}`;
+
+                box.appendChild(
+                    div
+                );
+
+            }
+        );
+
+    }
+);
+
+function closeHostRoleView() {
+
+    hide("hostRoleView");
+
+    show("game");
+
+}
+
+/* =========================================================
+CONTINUE ROLE
+========================================================= */
+
+function continueAfterRole() {
+
+    hide("roleReveal");
+
+    show("game");
+
+}
+
+/* =========================================================
+QUESTIONS
+========================================================= */
+
+socket.on(
+    "newQuestion",
+    data => {
+
+        show("game");
+
+        document.getElementById(
+            "gameStatus"
+        ).innerText =
+            "Answer Phase";
+
+        document.getElementById(
+            "gameQuestion"
+        ).innerText =
+            data.question;
+
+        renderQuestion(
+            data
+        );
+
+    }
+);
+
+function renderQuestion(data) {
+
+    const box =
+        document.getElementById(
+            "gameContent"
+        );
+
+    box.innerHTML = "";
+
+    if (
+        data.options &&
+        data.options.length
+    ) {
+
+        data.options.forEach(
+            option => {
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.className =
+                    "answerButton";
+
+                button.innerText =
+                    option;
+
+                button.onclick =
+                    () =>
+                        submitAnswer(
+                            option
+                        );
+
+                box.appendChild(
+                    button
+                );
+
+            }
+        );
+
+    }
+
+    else {
+
+        box.innerHTML = `
+
+            <input
+                id="typedAnswer"
+                placeholder="Type your answer"
+            >
+
+            <br>
+
+            <button onclick="submitTypedAnswer()">
+                Lock Answer
+            </button>
+
+        `;
+
+    }
+
+}
+
+function submitAnswer(answer) {
+
+    socket.emit(
+        "submitAnswer",
+        {
+            gameCode:
+                myGameCode,
+            answer
+        }
+    );
+
+    document.getElementById(
+        "gameContent"
+    ).innerHTML =
+        "<p>Answer submitted. Waiting for other players...</p>";
+
+}
+
+function submitTypedAnswer() {
+
+    const input =
+        document.getElementById(
+            "typedAnswer"
+        );
+
+    if (!input) return;
+
+    submitAnswer(
+        input.value
+    );
+
+}
+
+/* =========================================================
+VOTING
+========================================================= */
+
+socket.on(
+    "votingStarted",
+    data => {
+
+        document.getElementById(
+            "gameStatus"
+        ).innerText =
+            "Voting Phase";
+
+        document.getElementById(
+            "gameQuestion"
+        ).innerText =
+            "Vote for the player you suspect.";
+
+        const box =
+            document.getElementById(
+                "gameContent"
+            );
+
+        box.innerHTML = "";
+
+        data.players.forEach(
+            player => {
+
+                if (
+                    player === myName
+                ) return;
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.className =
+                    "answerButton";
+
+                button.innerText =
+                    player;
+
+                button.onclick =
+                    () =>
+                        submitVote(
+                            player
+                        );
+
+                box.appendChild(
+                    button
+                );
+
+            }
+        );
+
+    }
+);
+
+function submitVote(player) {
+
+    socket.emit(
+        "submitVote",
+        {
+            gameCode:
+                myGameCode,
+            vote:
+                player
+        }
+    );
+
+    document.getElementById(
+        "gameContent"
+    ).innerHTML =
+        "<p>Vote submitted. Waiting for other players...</p>";
+
+}
+
+/* =========================================================
+ROUND RESULTS
+========================================================= */
+
+socket.on(
+    "roundResult",
+    data => {
+
+        document.getElementById(
+            "gameStatus"
+        ).innerText =
+            "Round Results";
+
+        document.getElementById(
+            "gameQuestion"
+        ).innerText =
+            data.message;
+
+        document.getElementById(
+            "gameContent"
+        ).innerHTML = `
+
+            <p>
+                Waiting for the next round...
+            </p>
+
+        `;
+
+    }
+);
+
+/* =========================================================
+GAME OVER
+========================================================= */
+
+socket.on(
+    "gameOver",
+    data => {
+
+        hideAllScreens();
+
+        show("gameOver");
+
+        document.getElementById(
+            "winnerMessage"
+        ).innerText =
+            data.message;
+
+        const box =
+            document.getElementById(
+                "finalRoles"
+            );
+
+        box.innerHTML = "";
+
+        if (
+            data.roles
+        ) {
+
+            data.roles.forEach(
+                player => {
+
+                    box.innerHTML += `
+
+                        <div class="playerCard">
+
+                            <strong>
+                                ${escapeHTML(player.name)}
+                            </strong>
+
+                            <br>
+
+                            ${escapeHTML(player.role)}
+
+                        </div>
+
+                    `;
+
+                }
+            );
+
+        }
+
+    }
+);
+
+/* =========================================================
+SERVER ERRORS
+========================================================= */
+
+socket.on(
+    "errorMessage",
+    message => {
+
+        alert(
+            message
+        );
+
+    }
+);
+
+/* =========================================================
+INITIAL STATE
+========================================================= */
+
+hideAllScreens();
+
+show("connectionBox");
+
+</script>
+
+</body>
+</html>
+
+
+
