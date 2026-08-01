@@ -11,6 +11,18 @@ const PORT = process.env.PORT || 3000;
 
 const games = new Map();
 
+/* =========================================================
+GAME SETTINGS
+========================================================= */
+
+const DISCUSSION_DURATION = 90000; // 90 seconds
+const ABILITIES_DURATION = 10000;  // 10 seconds
+const EVIDENCE_DURATION = 5000;    // 5 seconds
+
+/* =========================================================
+QUESTIONS
+========================================================= */
+
 const QUESTIONS = [
     {
         question: "What planet is known as the Red Planet?",
@@ -134,6 +146,14 @@ function sendError(socket, message) {
     );
 }
 
+function getRandomQuestion() {
+    return QUESTIONS[
+        Math.floor(
+            Math.random() * QUESTIONS.length
+        )
+    ];
+}
+
 /* =========================================================
 ROLE ASSIGNMENT
 ========================================================= */
@@ -168,6 +188,16 @@ function assignRoles(game) {
         shuffled[i].role = "Bad Apple";
     }
 
+    /*
+    BANANA
+
+    The Banana only appears with 6+
+    playing players.
+
+    The Banana can be on either side,
+    but is not a Bad Apple.
+    */
+
     if (players.length >= 6) {
 
         const available =
@@ -191,6 +221,130 @@ function assignRoles(game) {
     }
 
     return true;
+}
+
+/* =========================================================
+SEND ROLES
+========================================================= */
+
+function sendRoles(game) {
+
+    game.players
+        .filter(
+            player =>
+                player.isPlaying &&
+                !player.isBot
+        )
+        .forEach(
+            player => {
+
+                const playerSocket =
+                    io.sockets.sockets.get(
+                        player.id
+                    );
+
+                if (!playerSocket) {
+                    return;
+                }
+
+                playerSocket.emit(
+                    "roleAssigned",
+                    {
+                        role:
+                            player.role
+                    }
+                );
+            }
+        );
+
+    /*
+    HOST SPECTATOR ROLE OVERVIEW
+    */
+
+    const host =
+        game.players.find(
+            player =>
+                player.isHost
+        );
+
+    if (
+        host &&
+        !host.isPlaying
+    ) {
+
+        const hostSocket =
+            io.sockets.sockets.get(
+                host.id
+            );
+
+        if (hostSocket) {
+
+            hostSocket.emit(
+                "hostRoleOverview",
+                {
+                    players:
+                        game.players
+                            .filter(
+                                player =>
+                                    player.isPlaying
+                            )
+                            .map(
+                                player => ({
+                                    name:
+                                        player.name,
+
+                                    role:
+                                        player.role
+                                })
+                            )
+                }
+            );
+        }
+    }
+}
+
+/* =========================================================
+BAD APPLE HINTS
+========================================================= */
+
+function giveBadAppleHints(game) {
+
+    game.players
+        .filter(
+            player =>
+                player.isPlaying &&
+                player.role === "Bad Apple"
+        )
+        .forEach(
+            badApple => {
+
+                const nextQuestion =
+                    getRandomQuestion();
+
+                badApple.hint =
+                    nextQuestion.question;
+
+                if (badApple.isBot) {
+                    return;
+                }
+
+                const playerSocket =
+                    io.sockets.sockets.get(
+                        badApple.id
+                    );
+
+                if (playerSocket) {
+
+                    playerSocket.emit(
+                        "badAppleHint",
+                        {
+                            hint:
+                                badApple.hint
+                        }
+                    );
+                }
+            }
+        );
 }
 
 /* =========================================================
@@ -241,24 +395,10 @@ function botUseAbility(game, bot) {
 
     /*
     BAD APPLE HINT
+
+    Bad Apples already receive their hint
+    when the question begins.
     */
-
-    if (
-        bot.role === "Bad Apple" &&
-        !bot.hint
-    ) {
-
-        const nextQuestion =
-            QUESTIONS[
-                Math.floor(
-                    Math.random() *
-                    QUESTIONS.length
-                )
-            ];
-
-        bot.hint =
-            nextQuestion.question;
-    }
 
     /*
     RED APPLE SHIELD
@@ -277,6 +417,14 @@ function botUseAbility(game, bot) {
                 );
 
         if (targets.length > 0) {
+
+            /*
+            Bots have a higher chance of
+            protecting a player they think
+            is suspicious.
+
+            For now, choose randomly.
+            */
 
             const target =
                 targets[
@@ -311,8 +459,7 @@ function botVote(game, bot) {
     }
 
     /*
-    WRONG ANSWERS REMOVE
-    A PLAYER'S VOTE
+    WRONG ANSWERS LOSE THEIR VOTE
     */
 
     const botCorrect =
@@ -326,6 +473,11 @@ function botVote(game, bot) {
     }
 
     let target;
+
+    /*
+    BAD APPLES TRY TO REMOVE
+    NON-BAD APPLES.
+    */
 
     if (
         bot.role === "Bad Apple"
@@ -354,6 +506,11 @@ function botVote(game, bot) {
 
     } else {
 
+        /*
+        EVERYONE ELSE TARGETS
+        BAD APPLES WHEN POSSIBLE.
+        */
+
         const badApples =
             targets.filter(
                 player =>
@@ -381,7 +538,7 @@ function botVote(game, bot) {
 }
 
 /* =========================================================
-CHECK ANSWERS
+CHECK ALL ANSWERS
 ========================================================= */
 
 function checkAllAnswers(game) {
@@ -400,6 +557,15 @@ function checkAllAnswers(game) {
         return;
     }
 
+    if (game.answerTimer) {
+        clearTimeout(
+            game.answerTimer
+        );
+
+        game.answerTimer =
+            null;
+    }
+
     setTimeout(
         () =>
             finishAnswerPhase(game),
@@ -414,6 +580,14 @@ FINISH ANSWER PHASE
 function finishAnswerPhase(game) {
 
     if (!games.has(game.code)) {
+        return;
+    }
+
+    if (!game.started) {
+        return;
+    }
+
+    if (game.phase !== "answer") {
         return;
     }
 
@@ -441,20 +615,49 @@ function finishAnswerPhase(game) {
     });
 
     /*
-    RESET VOTES
+    RESET ROUND VOTES
     */
 
     game.votes = {};
 
     /*
-    RESET SHIELDS FOR ROUND
+    RESET ROUND SHIELDS
+
+    Shield abilities are usable once
+    per round.
     */
 
     game.shields = {};
 
+    players.forEach(
+        player => {
+
+            if (
+                player.role ===
+                "Red Apple"
+            ) {
+                player.shieldUsed =
+                    false;
+            }
+        }
+    );
+
     /*
-    DISCUSSION PHASE
+    START DISCUSSION
     */
+
+    startDiscussionPhase(game);
+}
+
+/* =========================================================
+DISCUSSION PHASE
+========================================================= */
+
+function startDiscussionPhase(game) {
+
+    if (!game.started) {
+        return;
+    }
 
     game.phase =
         "discussion";
@@ -462,12 +665,17 @@ function finishAnswerPhase(game) {
     io.to(game.code).emit(
         "discussionStarted",
         {
-            duration: 15000
+            duration:
+                DISCUSSION_DURATION
         }
     );
 
     /*
-    BOTS USE ABILITIES
+    BOTS CAN USE ABILITIES DURING
+    THE DISCUSSION WINDOW.
+
+    HUMAN PLAYERS CAN USE THE
+    ABILITY BUTTONS FROM THE HTML.
     */
 
     setTimeout(
@@ -477,48 +685,91 @@ function finishAnswerPhase(game) {
                 return;
             }
 
-            getPlayingPlayers(game)
-                .filter(
-                    player =>
-                        player.isBot
-                )
-                .forEach(
-                    bot =>
-                        botUseAbility(
-                            game,
-                            bot
-                        )
-                );
+            if (
+                game.phase !==
+                "discussion"
+            ) {
+                return;
+            }
 
-            io.to(game.code).emit(
-                "abilitiesUpdated",
-                {
-                    shields:
-                        Object.keys(
-                            game.shields
-                        )
-                }
-            );
+            startAbilitiesPhase(game);
 
         },
-        1000
+        DISCUSSION_DURATION
     );
+}
+
+/* =========================================================
+ABILITIES PHASE
+========================================================= */
+
+function startAbilitiesPhase(game) {
+
+    if (!game.started) {
+        return;
+    }
+
+    game.phase =
+        "abilities";
 
     /*
-    START VOTING AFTER DISCUSSION
+    BOTS USE THEIR ABILITIES
     */
+
+    getPlayingPlayers(game)
+        .filter(
+            player =>
+                player.isBot
+        )
+        .forEach(
+            bot =>
+                botUseAbility(
+                    game,
+                    bot
+                )
+        );
+
+    io.to(game.code).emit(
+        "abilitiesStarted",
+        {
+            duration:
+                ABILITIES_DURATION,
+
+            shields:
+                Object.keys(
+                    game.shields
+                )
+        }
+    );
+
+    io.to(game.code).emit(
+        "abilitiesUpdated",
+        {
+            shields:
+                Object.keys(
+                    game.shields
+                )
+        }
+    );
 
     setTimeout(
         () => {
 
             if (!game.started) {
+                return;
+            }
+
+            if (
+                game.phase !==
+                "abilities"
+            ) {
                 return;
             }
 
             startVotingPhase(game);
 
         },
-        15000
+        ABILITIES_DURATION
     );
 }
 
@@ -527,6 +778,10 @@ START VOTING
 ========================================================= */
 
 function startVotingPhase(game) {
+
+    if (!game.started) {
+        return;
+    }
 
     const players =
         getPlayingPlayers(game);
@@ -558,6 +813,13 @@ function startVotingPhase(game) {
                 return;
             }
 
+            if (
+                game.phase !==
+                "voting"
+            ) {
+                return;
+            }
+
             players
                 .filter(
                     player =>
@@ -579,18 +841,24 @@ function startVotingPhase(game) {
 }
 
 /* =========================================================
-CHECK VOTES
+CHECK ALL VOTES
 ========================================================= */
 
 function checkAllVotes(game) {
+
+    if (
+        game.phase !==
+        "voting"
+    ) {
+        return;
+    }
 
     const players =
         getPlayingPlayers(game);
 
     /*
-    A PLAYER WHO ANSWERED
-    WRONG DOES NOT NEED TO
-    SUBMIT A VOTE.
+    PLAYERS WHO ANSWERED WRONG
+    DO NOT NEED TO VOTE.
     */
 
     const allVoted =
@@ -611,7 +879,6 @@ function checkAllVotes(game) {
                         player.id
                     ] !== undefined
                 );
-
             }
         );
 
@@ -627,6 +894,13 @@ FINISH VOTING
 ========================================================= */
 
 function finishVoting(game) {
+
+    if (
+        game.phase !==
+        "voting"
+    ) {
+        return;
+    }
 
     game.phase =
         "evidence";
@@ -650,8 +924,8 @@ function finishVoting(game) {
             }
 
             /*
-            WRONG ANSWER =
-            NO VOTE
+            WRONG ANSWERS
+            HAVE NO VOTE.
             */
 
             if (
@@ -692,12 +966,29 @@ function finishVoting(game) {
                 eliminatedName =
                     name;
             }
-
         }
     );
 
     /*
+    TIE / NO VOTE
+
+    If nobody has more votes than
+    zero, nobody is eliminated.
+    */
+
+    if (
+        highestVotes === 0
+    ) {
+        eliminatedName =
+            null;
+    }
+
+    /*
     EVIDENCE DATA
+
+    This is intentionally sent before
+    elimination so the client can show
+    the evidence screen first.
     */
 
     const evidence =
@@ -728,9 +1019,8 @@ function finishVoting(game) {
                 })
             );
 
-    /*
-    REVEAL EVIDENCE FIRST
-    */
+    game.pendingElimination =
+        eliminatedName;
 
     io.to(game.code).emit(
         "evidencePhase",
@@ -742,8 +1032,7 @@ function finishVoting(game) {
     );
 
     /*
-    WAIT FOR EVIDENCE
-    THEN ELIMINATE
+    WAIT FOR THE EVIDENCE SCREEN
     */
 
     setTimeout(
@@ -753,13 +1042,20 @@ function finishVoting(game) {
                 return;
             }
 
+            if (
+                game.phase !==
+                "evidence"
+            ) {
+                return;
+            }
+
             applyElimination(
                 game,
                 eliminatedName
             );
 
         },
-        5000
+        EVIDENCE_DURATION
     );
 }
 
@@ -772,27 +1068,56 @@ function applyElimination(
     eliminatedName
 ) {
 
+    if (!game.started) {
+        return;
+    }
+
     const eliminatedPlayer =
         game.players.find(
             player =>
                 player.name ===
-                eliminatedName
+                eliminatedName &&
+                player.isPlaying
         );
 
-    let message;
+    /*
+    NO ELIMINATION
+    */
+
+    if (!eliminatedPlayer) {
+
+        const message =
+            "Nobody was eliminated this round.";
+
+        io.to(game.code).emit(
+            "roundResult",
+            {
+                message,
+                eliminated: false,
+                shielded: null
+            }
+        );
+
+        checkWinCondition(
+            game
+        );
+
+        return;
+    }
 
     /*
     SHIELD CHECK
+
+    The shield belongs to the target.
     */
 
     if (
-        eliminatedPlayer &&
         game.shields[
             eliminatedPlayer.id
         ]
     ) {
 
-        message =
+        const message =
             `${eliminatedPlayer.name} was protected by a shield and survived the vote.`;
 
         io.to(game.code).emit(
@@ -812,28 +1137,25 @@ function applyElimination(
         return;
     }
 
-    if (eliminatedPlayer) {
+    /*
+    ELIMINATE PLAYER
+    */
 
-        eliminatedPlayer.isPlaying =
-            false;
+    eliminatedPlayer.isPlaying =
+        false;
 
-        message =
-            `${eliminatedPlayer.name} was eliminated. They were a ${eliminatedPlayer.role}.`;
-
-    } else {
-
-        message =
-            "Nobody was eliminated this round.";
-    }
+    const message =
+        `${eliminatedPlayer.name} was eliminated. They were a ${eliminatedPlayer.role}.`;
 
     io.to(game.code).emit(
         "roundResult",
         {
             message,
-            eliminated:
-                Boolean(
-                    eliminatedPlayer
-                )
+            eliminated: true,
+            eliminatedPlayer:
+                eliminatedPlayer.name,
+            role:
+                eliminatedPlayer.role
         }
     );
 
@@ -868,6 +1190,10 @@ function checkWinCondition(game) {
     let winner =
         null;
 
+    /*
+    ALL BAD APPLES ARE GONE
+    */
+
     if (
         badApples.length === 0
     ) {
@@ -875,7 +1201,14 @@ function checkWinCondition(game) {
         winner =
             "The Red Apples win!";
 
-    } else if (
+    }
+
+    /*
+    BAD APPLES EQUAL OR OUTNUMBER
+    THE OTHER PLAYERS
+    */
+
+    else if (
         badApples.length >=
         goodPlayers.length
     ) {
@@ -902,7 +1235,10 @@ function checkWinCondition(game) {
                                 player.name,
 
                             role:
-                                player.role
+                                player.role,
+
+                            isPlaying:
+                                player.isPlaying
                         })
                     )
             }
@@ -913,6 +1249,10 @@ function checkWinCondition(game) {
 
         return true;
     }
+
+    /*
+    START NEXT ROUND
+    */
 
     setTimeout(
         () =>
@@ -944,13 +1284,11 @@ function startNextRound(game) {
 
     game.shields = {};
 
+    game.pendingElimination =
+        null;
+
     game.currentQuestion =
-        QUESTIONS[
-            Math.floor(
-                Math.random() *
-                QUESTIONS.length
-            )
-        ];
+        getRandomQuestion();
 
     io.to(game.code).emit(
         "newQuestion",
@@ -963,54 +1301,10 @@ function startNextRound(game) {
     );
 
     /*
-    BAD APPLE HINTS
+    GIVE BAD APPLES THEIR HINTS
     */
 
-    game.players
-        .filter(
-            player =>
-                player.isPlaying &&
-                player.role ===
-                "Bad Apple"
-        )
-        .forEach(
-            badApple => {
-
-                const nextQuestion =
-                    QUESTIONS[
-                        Math.floor(
-                            Math.random() *
-                            QUESTIONS.length
-                        )
-                    ];
-
-                badApple.hint =
-                    nextQuestion.question;
-
-                if (
-                    badApple.isBot
-                ) {
-                    return;
-                }
-
-                const playerSocket =
-                    io.sockets.sockets.get(
-                        badApple.id
-                    );
-
-                if (playerSocket) {
-
-                    playerSocket.emit(
-                        "badAppleHint",
-                        {
-                            hint:
-                                badApple.hint
-                        }
-                    );
-                }
-
-            }
-        );
+    giveBadAppleHints(game);
 
     /*
     BOTS ANSWER
@@ -1020,6 +1314,13 @@ function startNextRound(game) {
         () => {
 
             if (!game.started) {
+                return;
+            }
+
+            if (
+                game.phase !==
+                "answer"
+            ) {
                 return;
             }
 
@@ -1043,6 +1344,59 @@ function startNextRound(game) {
         },
         1000
     );
+
+    /*
+    ANSWER TIMEOUT
+
+    Prevents the game from getting
+    stuck forever if a human player
+    disconnects or never answers.
+    */
+
+    game.answerTimer =
+        setTimeout(
+            () => {
+
+                if (!game.started) {
+                    return;
+                }
+
+                if (
+                    game.phase !==
+                    "answer"
+                ) {
+                    return;
+                }
+
+                /*
+                Give unanswered players
+                an empty answer.
+                */
+
+                getPlayingPlayers(game)
+                    .forEach(
+                        player => {
+
+                            if (
+                                game.answers[
+                                    player.id
+                                ] === undefined
+                            ) {
+
+                                game.answers[
+                                    player.id
+                                ] = "";
+                            }
+                        }
+                    );
+
+                finishAnswerPhase(
+                    game
+                );
+
+            },
+            30000
+        );
 }
 
 /* =========================================================
@@ -1102,7 +1456,13 @@ io.on(
 
                     votes: {},
 
-                    shields: {}
+                    shields: {},
+
+                    pendingElimination:
+                        null,
+
+                    answerTimer:
+                        null
                 };
 
                 const host = {
@@ -1703,77 +2063,9 @@ io.on(
                     }
                 );
 
-                game.players
-                    .filter(
-                        player =>
-                            player.isPlaying &&
-                            !player.isBot
-                    )
-                    .forEach(
-                        player => {
-
-                            const playerSocket =
-                                io.sockets.sockets.get(
-                                    player.id
-                                );
-
-                            if (
-                                playerSocket
-                            ) {
-
-                                playerSocket.emit(
-                                    "roleAssigned",
-                                    {
-                                        role:
-                                            player.role
-                                    }
-                                );
-                            }
-                        }
-                    );
-
-                const host =
-                    game.players.find(
-                        player =>
-                            player.isHost
-                    );
-
-                if (
-                    host &&
-                    !host.isPlaying
-                ) {
-
-                    const hostSocket =
-                        io.sockets.sockets.get(
-                            host.id
-                        );
-
-                    if (
-                        hostSocket
-                    ) {
-
-                        hostSocket.emit(
-                            "hostRoleOverview",
-                            {
-                                players:
-                                    game.players
-                                        .filter(
-                                            player =>
-                                                player.isPlaying
-                                        )
-                                        .map(
-                                            player => ({
-                                                name:
-                                                    player.name,
-
-                                                role:
-                                                    player.role
-                                            })
-                                        )
-                            }
-                        );
-                    }
-                }
+                sendRoles(
+                    game
+                );
 
                 setTimeout(
                     () =>
@@ -1858,9 +2150,16 @@ io.on(
                     return;
                 }
 
+                /*
+                Shields can be used during
+                discussion OR abilities.
+                */
+
                 if (
                     game.phase !==
-                    "discussion"
+                    "discussion" &&
+                    game.phase !==
+                    "abilities"
                 ) {
                     return;
                 }
@@ -1975,7 +2274,7 @@ io.on(
 
                 /*
                 WRONG ANSWERS
-                LOSE THEIR VOTE
+                LOSE THEIR VOTE.
                 */
 
                 if (
@@ -2054,6 +2353,12 @@ io.on(
                     return;
                 }
 
+                if (game.answerTimer) {
+                    clearTimeout(
+                        game.answerTimer
+                    );
+                }
+
                 io.to(game.code).emit(
                     "gameOver",
                     {
@@ -2101,10 +2406,20 @@ io.on(
                         continue;
                     }
 
+                    /*
+                    HOST DISCONNECTS
+                    */
+
                     if (
                         game.hostId ===
                         socket.id
                     ) {
+
+                        if (game.answerTimer) {
+                            clearTimeout(
+                                game.answerTimer
+                            );
+                        }
 
                         io.to(code).emit(
                             "gameOver",
@@ -2122,12 +2437,46 @@ io.on(
 
                     } else {
 
+                        /*
+                        REMOVE PLAYER
+                        */
+
                         game.players =
                             game.players.filter(
                                 p =>
                                     p.id !==
                                     socket.id
                             );
+
+                        /*
+                        IF GAME IS CURRENTLY
+                        WAITING FOR ANSWERS OR
+                        VOTES, RECHECK.
+                        */
+
+                        if (
+                            game.started
+                        ) {
+
+                            if (
+                                game.phase ===
+                                "answer"
+                            ) {
+
+                                checkAllAnswers(
+                                    game
+                                );
+
+                            } else if (
+                                game.phase ===
+                                "voting"
+                            ) {
+
+                                checkAllVotes(
+                                    game
+                                );
+                            }
+                        }
 
                         broadcastLobby(
                             game
