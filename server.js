@@ -18,6 +18,7 @@ GAME SETTINGS
 const DISCUSSION_DURATION = 90000; // 90 seconds
 const ABILITIES_DURATION = 10000;  // 10 seconds
 const EVIDENCE_DURATION = 5000;    // 5 seconds
+const ANSWER_DURATION = 30000;     // 30 seconds
 
 /* =========================================================
 QUESTIONS
@@ -109,7 +110,11 @@ function isAnswerCorrect(question, answer) {
 }
 
 function getGame(code) {
-    return games.get(code);
+    return games.get(
+        String(code || "")
+            .trim()
+            .toUpperCase()
+    );
 }
 
 function getPlayingPlayers(game) {
@@ -155,6 +160,69 @@ function getRandomQuestion() {
 }
 
 /* =========================================================
+TIMER MANAGEMENT
+========================================================= */
+
+function clearGameTimers(game) {
+    if (!game) {
+        return;
+    }
+
+    if (game.answerTimer) {
+        clearTimeout(game.answerTimer);
+        game.answerTimer = null;
+    }
+
+    if (game.discussionTimer) {
+        clearTimeout(game.discussionTimer);
+        game.discussionTimer = null;
+    }
+
+    if (game.abilitiesTimer) {
+        clearTimeout(game.abilitiesTimer);
+        game.abilitiesTimer = null;
+    }
+
+    if (game.evidenceTimer) {
+        clearTimeout(game.evidenceTimer);
+        game.evidenceTimer = null;
+    }
+
+    if (game.nextRoundTimer) {
+        clearTimeout(game.nextRoundTimer);
+        game.nextRoundTimer = null;
+    }
+
+    if (game.botTimer) {
+        clearTimeout(game.botTimer);
+        game.botTimer = null;
+    }
+}
+
+function endGame(game, message) {
+    if (!game) {
+        return;
+    }
+
+    clearGameTimers(game);
+
+    game.started = false;
+    game.phase = "gameOver";
+
+    io.to(game.code).emit(
+        "gameOver",
+        {
+            message,
+            roles: game.players.map(player => ({
+                name: player.name,
+                role: player.role,
+                isPlaying: player.isPlaying
+            }))
+        }
+    );
+}
+
+/* =========================================================
 ROLE ASSIGNMENT
 ========================================================= */
 
@@ -180,34 +248,24 @@ function assignRoles(game) {
         player.hint = null;
     });
 
-    for (
-        let i = 0;
-        i < badAppleCount;
-        i++
-    ) {
+    for (let i = 0; i < badAppleCount; i++) {
         shuffled[i].role = "Bad Apple";
     }
 
     /*
     BANANA
 
-    The Banana only appears with 6+
-    playing players.
-
-    The Banana can be on either side,
-    but is not a Bad Apple.
+    Appears with 6+ players.
+    The Banana is never a Bad Apple.
     */
 
     if (players.length >= 6) {
-
-        const available =
-            shuffled.filter(
-                player =>
-                    player.role === "Red Apple"
-            );
+        const available = shuffled.filter(
+            player =>
+                player.role === "Red Apple"
+        );
 
         if (available.length > 0) {
-
             const banana =
                 available[
                     Math.floor(
@@ -228,34 +286,29 @@ SEND ROLES
 ========================================================= */
 
 function sendRoles(game) {
-
     game.players
         .filter(
             player =>
                 player.isPlaying &&
                 !player.isBot
         )
-        .forEach(
-            player => {
-
-                const playerSocket =
-                    io.sockets.sockets.get(
-                        player.id
-                    );
-
-                if (!playerSocket) {
-                    return;
-                }
-
-                playerSocket.emit(
-                    "roleAssigned",
-                    {
-                        role:
-                            player.role
-                    }
+        .forEach(player => {
+            const playerSocket =
+                io.sockets.sockets.get(
+                    player.id
                 );
+
+            if (!playerSocket) {
+                return;
             }
-        );
+
+            playerSocket.emit(
+                "roleAssigned",
+                {
+                    role: player.role
+                }
+            );
+        });
 
     /*
     HOST SPECTATOR ROLE OVERVIEW
@@ -263,22 +316,16 @@ function sendRoles(game) {
 
     const host =
         game.players.find(
-            player =>
-                player.isHost
+            player => player.isHost
         );
 
-    if (
-        host &&
-        !host.isPlaying
-    ) {
-
+    if (host && !host.isPlaying) {
         const hostSocket =
             io.sockets.sockets.get(
                 host.id
             );
 
         if (hostSocket) {
-
             hostSocket.emit(
                 "hostRoleOverview",
                 {
@@ -292,7 +339,6 @@ function sendRoles(game) {
                                 player => ({
                                     name:
                                         player.name,
-
                                     role:
                                         player.role
                                 })
@@ -308,43 +354,38 @@ BAD APPLE HINTS
 ========================================================= */
 
 function giveBadAppleHints(game) {
-
     game.players
         .filter(
             player =>
                 player.isPlaying &&
                 player.role === "Bad Apple"
         )
-        .forEach(
-            badApple => {
+        .forEach(badApple => {
+            const nextQuestion =
+                getRandomQuestion();
 
-                const nextQuestion =
-                    getRandomQuestion();
+            badApple.hint =
+                nextQuestion.question;
 
-                badApple.hint =
-                    nextQuestion.question;
-
-                if (badApple.isBot) {
-                    return;
-                }
-
-                const playerSocket =
-                    io.sockets.sockets.get(
-                        badApple.id
-                    );
-
-                if (playerSocket) {
-
-                    playerSocket.emit(
-                        "badAppleHint",
-                        {
-                            hint:
-                                badApple.hint
-                        }
-                    );
-                }
+            if (badApple.isBot) {
+                return;
             }
-        );
+
+            const playerSocket =
+                io.sockets.sockets.get(
+                    badApple.id
+                );
+
+            if (playerSocket) {
+                playerSocket.emit(
+                    "badAppleHint",
+                    {
+                        hint:
+                            badApple.hint
+                    }
+                );
+            }
+        });
 }
 
 /* =========================================================
@@ -352,7 +393,6 @@ BOT ANSWERS
 ========================================================= */
 
 function botAnswer(game, bot) {
-
     if (!game.currentQuestion) {
         return;
     }
@@ -385,20 +425,12 @@ BOT ABILITIES
 ========================================================= */
 
 function botUseAbility(game, bot) {
-
     if (
         !bot ||
         !bot.isPlaying
     ) {
         return;
     }
-
-    /*
-    BAD APPLE HINT
-
-    Bad Apples already receive their hint
-    when the question begins.
-    */
 
     /*
     RED APPLE SHIELD
@@ -408,7 +440,6 @@ function botUseAbility(game, bot) {
         bot.role === "Red Apple" &&
         !bot.shieldUsed
     ) {
-
         const targets =
             getPlayingPlayers(game)
                 .filter(
@@ -417,15 +448,6 @@ function botUseAbility(game, bot) {
                 );
 
         if (targets.length > 0) {
-
-            /*
-            Bots have a higher chance of
-            protecting a player they think
-            is suspicious.
-
-            For now, choose randomly.
-            */
-
             const target =
                 targets[
                     Math.floor(
@@ -447,7 +469,6 @@ BOT VOTING
 ========================================================= */
 
 function botVote(game, bot) {
-
     const targets =
         getPlayingPlayers(game).filter(
             player =>
@@ -457,10 +478,6 @@ function botVote(game, bot) {
     if (targets.length === 0) {
         return;
     }
-
-    /*
-    WRONG ANSWERS LOSE THEIR VOTE
-    */
 
     const botCorrect =
         isAnswerCorrect(
@@ -474,15 +491,7 @@ function botVote(game, bot) {
 
     let target;
 
-    /*
-    BAD APPLES TRY TO REMOVE
-    NON-BAD APPLES.
-    */
-
-    if (
-        bot.role === "Bad Apple"
-    ) {
-
+    if (bot.role === "Bad Apple") {
         const redPlayers =
             targets.filter(
                 player =>
@@ -503,14 +512,7 @@ function botVote(game, bot) {
                         targets.length
                     )
                 ];
-
     } else {
-
-        /*
-        EVERYONE ELSE TARGETS
-        BAD APPLES WHEN POSSIBLE.
-        */
-
         const badApples =
             targets.filter(
                 player =>
@@ -542,6 +544,13 @@ CHECK ALL ANSWERS
 ========================================================= */
 
 function checkAllAnswers(game) {
+    if (
+        !game ||
+        !game.started ||
+        game.phase !== "answer"
+    ) {
+        return;
+    }
 
     const players =
         getPlayingPlayers(game);
@@ -567,8 +576,14 @@ function checkAllAnswers(game) {
     }
 
     setTimeout(
-        () =>
-            finishAnswerPhase(game),
+        () => {
+            if (
+                game.started &&
+                game.phase === "answer"
+            ) {
+                finishAnswerPhase(game);
+            }
+        },
         500
     );
 }
@@ -578,7 +593,6 @@ FINISH ANSWER PHASE
 ========================================================= */
 
 function finishAnswerPhase(game) {
-
     if (!games.has(game.code)) {
         return;
     }
@@ -595,11 +609,9 @@ function finishAnswerPhase(game) {
         getPlayingPlayers(game);
 
     game.correctAnswers = 0;
-
     game.answerResults = {};
 
     players.forEach(player => {
-
         const correct =
             isAnswerCorrect(
                 game.currentQuestion,
@@ -614,37 +626,16 @@ function finishAnswerPhase(game) {
         }
     });
 
-    /*
-    RESET ROUND VOTES
-    */
-
     game.votes = {};
-
-    /*
-    RESET ROUND SHIELDS
-
-    Shield abilities are usable once
-    per round.
-    */
-
     game.shields = {};
 
-    players.forEach(
-        player => {
-
-            if (
-                player.role ===
-                "Red Apple"
-            ) {
-                player.shieldUsed =
-                    false;
-            }
+    players.forEach(player => {
+        if (
+            player.role === "Red Apple"
+        ) {
+            player.shieldUsed = false;
         }
-    );
-
-    /*
-    START DISCUSSION
-    */
+    });
 
     startDiscussionPhase(game);
 }
@@ -654,10 +645,14 @@ DISCUSSION PHASE
 ========================================================= */
 
 function startDiscussionPhase(game) {
-
-    if (!game.started) {
+    if (
+        !game ||
+        !game.started
+    ) {
         return;
     }
+
+    clearPhaseTimers(game);
 
     game.phase =
         "discussion";
@@ -670,33 +665,57 @@ function startDiscussionPhase(game) {
         }
     );
 
-    /*
-    BOTS CAN USE ABILITIES DURING
-    THE DISCUSSION WINDOW.
+    game.discussionTimer =
+        setTimeout(
+            () => {
+                game.discussionTimer =
+                    null;
 
-    HUMAN PLAYERS CAN USE THE
-    ABILITY BUTTONS FROM THE HTML.
-    */
+                if (
+                    !game.started ||
+                    game.phase !==
+                    "discussion"
+                ) {
+                    return;
+                }
 
-    setTimeout(
-        () => {
+                startAbilitiesPhase(game);
+            },
+            DISCUSSION_DURATION
+        );
+}
 
-            if (!game.started) {
-                return;
-            }
+/* =========================================================
+CLEAR PHASE TIMERS
+========================================================= */
 
-            if (
-                game.phase !==
-                "discussion"
-            ) {
-                return;
-            }
+function clearPhaseTimers(game) {
+    if (game.discussionTimer) {
+        clearTimeout(
+            game.discussionTimer
+        );
 
-            startAbilitiesPhase(game);
+        game.discussionTimer =
+            null;
+    }
 
-        },
-        DISCUSSION_DURATION
-    );
+    if (game.abilitiesTimer) {
+        clearTimeout(
+            game.abilitiesTimer
+        );
+
+        game.abilitiesTimer =
+            null;
+    }
+
+    if (game.evidenceTimer) {
+        clearTimeout(
+            game.evidenceTimer
+        );
+
+        game.evidenceTimer =
+            null;
+    }
 }
 
 /* =========================================================
@@ -704,16 +723,20 @@ ABILITIES PHASE
 ========================================================= */
 
 function startAbilitiesPhase(game) {
-
-    if (!game.started) {
+    if (
+        !game ||
+        !game.started
+    ) {
         return;
     }
+
+    clearPhaseTimers(game);
 
     game.phase =
         "abilities";
 
     /*
-    BOTS USE THEIR ABILITIES
+    BOTS USE ABILITIES
     */
 
     getPlayingPlayers(game)
@@ -752,25 +775,24 @@ function startAbilitiesPhase(game) {
         }
     );
 
-    setTimeout(
-        () => {
+    game.abilitiesTimer =
+        setTimeout(
+            () => {
+                game.abilitiesTimer =
+                    null;
 
-            if (!game.started) {
-                return;
-            }
+                if (
+                    !game.started ||
+                    game.phase !==
+                    "abilities"
+                ) {
+                    return;
+                }
 
-            if (
-                game.phase !==
-                "abilities"
-            ) {
-                return;
-            }
-
-            startVotingPhase(game);
-
-        },
-        ABILITIES_DURATION
-    );
+                startVotingPhase(game);
+            },
+            ABILITIES_DURATION
+        );
 }
 
 /* =========================================================
@@ -778,10 +800,14 @@ START VOTING
 ========================================================= */
 
 function startVotingPhase(game) {
-
-    if (!game.started) {
+    if (
+        !game ||
+        !game.started
+    ) {
         return;
     }
+
+    clearPhaseTimers(game);
 
     const players =
         getPlayingPlayers(game);
@@ -802,42 +828,37 @@ function startVotingPhase(game) {
         }
     );
 
-    /*
-    BOTS VOTE
-    */
+    game.botTimer =
+        setTimeout(
+            () => {
+                game.botTimer =
+                    null;
 
-    setTimeout(
-        () => {
+                if (
+                    !game.started ||
+                    game.phase !==
+                    "voting"
+                ) {
+                    return;
+                }
 
-            if (!game.started) {
-                return;
-            }
+                getPlayingPlayers(game)
+                    .filter(
+                        player =>
+                            player.isBot
+                    )
+                    .forEach(
+                        bot =>
+                            botVote(
+                                game,
+                                bot
+                            )
+                    );
 
-            if (
-                game.phase !==
-                "voting"
-            ) {
-                return;
-            }
-
-            players
-                .filter(
-                    player =>
-                        player.isBot
-                )
-                .forEach(
-                    bot =>
-                        botVote(
-                            game,
-                            bot
-                        )
-                );
-
-            checkAllVotes(game);
-
-        },
-        800
-    );
+                checkAllVotes(game);
+            },
+            800
+        );
 }
 
 /* =========================================================
@@ -845,10 +866,10 @@ CHECK ALL VOTES
 ========================================================= */
 
 function checkAllVotes(game) {
-
     if (
-        game.phase !==
-        "voting"
+        !game ||
+        !game.started ||
+        game.phase !== "voting"
     ) {
         return;
     }
@@ -856,15 +877,9 @@ function checkAllVotes(game) {
     const players =
         getPlayingPlayers(game);
 
-    /*
-    PLAYERS WHO ANSWERED WRONG
-    DO NOT NEED TO VOTE.
-    */
-
     const allVoted =
         players.every(
             player => {
-
                 const correct =
                     game.answerResults[
                         player.id
@@ -890,17 +905,19 @@ function checkAllVotes(game) {
 }
 
 /* =========================================================
-FINISH VOTING
+FINISH VOTING / EVIDENCE
 ========================================================= */
 
 function finishVoting(game) {
-
     if (
-        game.phase !==
-        "voting"
+        !game ||
+        !game.started ||
+        game.phase !== "voting"
     ) {
         return;
     }
+
+    clearPhaseTimers(game);
 
     game.phase =
         "evidence";
@@ -911,7 +928,6 @@ function finishVoting(game) {
         game.votes
     ).forEach(
         ([voterId, targetName]) => {
-
             const voter =
                 game.players.find(
                     player =>
@@ -922,11 +938,6 @@ function finishVoting(game) {
             if (!voter) {
                 return;
             }
-
-            /*
-            WRONG ANSWERS
-            HAVE NO VOTE.
-            */
 
             if (
                 !game.answerResults[
@@ -954,12 +965,10 @@ function finishVoting(game) {
         voteCounts
     ).forEach(
         ([name, count]) => {
-
             if (
                 count >
                 highestVotes
             ) {
-
                 highestVotes =
                     count;
 
@@ -969,13 +978,6 @@ function finishVoting(game) {
         }
     );
 
-    /*
-    TIE / NO VOTE
-
-    If nobody has more votes than
-    zero, nobody is eliminated.
-    */
-
     if (
         highestVotes === 0
     ) {
@@ -984,11 +986,10 @@ function finishVoting(game) {
     }
 
     /*
-    EVIDENCE DATA
+    IMPORTANT:
+    The elimination is NOT applied yet.
 
-    This is intentionally sent before
-    elimination so the client can show
-    the evidence screen first.
+    The evidence screen is shown first.
     */
 
     const evidence =
@@ -1031,32 +1032,27 @@ function finishVoting(game) {
         }
     );
 
-    /*
-    WAIT FOR THE EVIDENCE SCREEN
-    */
+    game.evidenceTimer =
+        setTimeout(
+            () => {
+                game.evidenceTimer =
+                    null;
 
-    setTimeout(
-        () => {
+                if (
+                    !game.started ||
+                    game.phase !==
+                    "evidence"
+                ) {
+                    return;
+                }
 
-            if (!game.started) {
-                return;
-            }
-
-            if (
-                game.phase !==
-                "evidence"
-            ) {
-                return;
-            }
-
-            applyElimination(
-                game,
-                eliminatedName
-            );
-
-        },
-        EVIDENCE_DURATION
-    );
+                applyElimination(
+                    game,
+                    game.pendingElimination
+                );
+            },
+            EVIDENCE_DURATION
+        );
 }
 
 /* =========================================================
@@ -1067,8 +1063,11 @@ function applyElimination(
     game,
     eliminatedName
 ) {
-
-    if (!game.started) {
+    if (
+        !game ||
+        !game.started ||
+        game.phase !== "evidence"
+    ) {
         return;
     }
 
@@ -1085,15 +1084,17 @@ function applyElimination(
     */
 
     if (!eliminatedPlayer) {
-
-        const message =
-            "Nobody was eliminated this round.";
+        game.phase =
+            "result";
 
         io.to(game.code).emit(
             "roundResult",
             {
-                message,
+                message:
+                    "Nobody was eliminated this round.",
+
                 eliminated: false,
+
                 shielded: null
             }
         );
@@ -1108,7 +1109,7 @@ function applyElimination(
     /*
     SHIELD CHECK
 
-    The shield belongs to the target.
+    Shields are stored by target ID.
     */
 
     if (
@@ -1116,15 +1117,17 @@ function applyElimination(
             eliminatedPlayer.id
         ]
     ) {
-
-        const message =
-            `${eliminatedPlayer.name} was protected by a shield and survived the vote.`;
+        game.phase =
+            "result";
 
         io.to(game.code).emit(
             "roundResult",
             {
-                message,
+                message:
+                    `${eliminatedPlayer.name} was protected by a shield and survived the vote.`,
+
                 eliminated: false,
+
                 shielded:
                     eliminatedPlayer.name
             }
@@ -1144,16 +1147,20 @@ function applyElimination(
     eliminatedPlayer.isPlaying =
         false;
 
-    const message =
-        `${eliminatedPlayer.name} was eliminated. They were a ${eliminatedPlayer.role}.`;
+    game.phase =
+        "result";
 
     io.to(game.code).emit(
         "roundResult",
         {
-            message,
+            message:
+                `${eliminatedPlayer.name} was eliminated. They were a ${eliminatedPlayer.role}.`,
+
             eliminated: true,
+
             eliminatedPlayer:
                 eliminatedPlayer.name,
+
             role:
                 eliminatedPlayer.role
         }
@@ -1169,6 +1176,12 @@ WIN CONDITION
 ========================================================= */
 
 function checkWinCondition(game) {
+    if (
+        !game ||
+        !game.started
+    ) {
+        return true;
+    }
 
     const playing =
         getPlayingPlayers(game);
@@ -1197,10 +1210,8 @@ function checkWinCondition(game) {
     if (
         badApples.length === 0
     ) {
-
         winner =
             "The Red Apples win!";
-
     }
 
     /*
@@ -1212,40 +1223,15 @@ function checkWinCondition(game) {
         badApples.length >=
         goodPlayers.length
     ) {
-
         winner =
             "The Bad Apples win!";
     }
 
     if (winner) {
-
-        game.phase =
-            "gameOver";
-
-        io.to(game.code).emit(
-            "gameOver",
-            {
-                message:
-                    winner,
-
-                roles:
-                    game.players.map(
-                        player => ({
-                            name:
-                                player.name,
-
-                            role:
-                                player.role,
-
-                            isPlaying:
-                                player.isPlaying
-                        })
-                    )
-            }
+        endGame(
+            game,
+            winner
         );
-
-        game.started =
-            false;
 
         return true;
     }
@@ -1254,11 +1240,24 @@ function checkWinCondition(game) {
     START NEXT ROUND
     */
 
-    setTimeout(
-        () =>
-            startNextRound(game),
-        2500
-    );
+    game.nextRoundTimer =
+        setTimeout(
+            () => {
+                game.nextRoundTimer =
+                    null;
+
+                if (
+                    game.started &&
+                    game.phase ===
+                    "result"
+                ) {
+                    startNextRound(
+                        game
+                    );
+                }
+            },
+            2500
+        );
 
     return false;
 }
@@ -1268,8 +1267,10 @@ START NEXT ROUND
 ========================================================= */
 
 function startNextRound(game) {
-
-    if (!game.started) {
+    if (
+        !game ||
+        !game.started
+    ) {
         return;
     }
 
@@ -1277,13 +1278,9 @@ function startNextRound(game) {
         "answer";
 
     game.answers = {};
-
     game.votes = {};
-
     game.answerResults = {};
-
     game.shields = {};
-
     game.pendingElimination =
         null;
 
@@ -1310,79 +1307,66 @@ function startNextRound(game) {
     BOTS ANSWER
     */
 
-    setTimeout(
-        () => {
-
-            if (!game.started) {
-                return;
-            }
-
-            if (
-                game.phase !==
-                "answer"
-            ) {
-                return;
-            }
-
-            getPlayingPlayers(game)
-                .filter(
-                    player =>
-                        player.isBot
-                )
-                .forEach(
-                    bot =>
-                        botAnswer(
-                            game,
-                            bot
-                        )
-                );
-
-            checkAllAnswers(
-                game
-            );
-
-        },
-        1000
-    );
-
-    /*
-    ANSWER TIMEOUT
-
-    Prevents the game from getting
-    stuck forever if a human player
-    disconnects or never answers.
-    */
-
-    game.answerTimer =
+    game.botTimer =
         setTimeout(
             () => {
-
-                if (!game.started) {
-                    return;
-                }
+                game.botTimer =
+                    null;
 
                 if (
+                    !game.started ||
                     game.phase !==
                     "answer"
                 ) {
                     return;
                 }
 
-                /*
-                Give unanswered players
-                an empty answer.
-                */
+                getPlayingPlayers(game)
+                    .filter(
+                        player =>
+                            player.isBot
+                    )
+                    .forEach(
+                        bot =>
+                            botAnswer(
+                                game,
+                                bot
+                            )
+                    );
+
+                checkAllAnswers(
+                    game
+                );
+            },
+            1000
+        );
+
+    /*
+    ANSWER TIMEOUT
+    */
+
+    game.answerTimer =
+        setTimeout(
+            () => {
+                game.answerTimer =
+                    null;
+
+                if (
+                    !game.started ||
+                    game.phase !==
+                    "answer"
+                ) {
+                    return;
+                }
 
                 getPlayingPlayers(game)
                     .forEach(
                         player => {
-
                             if (
                                 game.answers[
                                     player.id
                                 ] === undefined
                             ) {
-
                                 game.answers[
                                     player.id
                                 ] = "";
@@ -1393,9 +1377,8 @@ function startNextRound(game) {
                 finishAnswerPhase(
                     game
                 );
-
             },
-            30000
+            ANSWER_DURATION
         );
 }
 
@@ -1406,7 +1389,6 @@ SOCKET.IO
 io.on(
     "connection",
     socket => {
-
         console.log(
             "Player connected:",
             socket.id
@@ -1419,12 +1401,10 @@ io.on(
         socket.on(
             "createGame",
             data => {
-
                 const code =
                     generateGameCode();
 
                 const game = {
-
                     code,
 
                     mode:
@@ -1462,11 +1442,25 @@ io.on(
                         null,
 
                     answerTimer:
+                        null,
+
+                    discussionTimer:
+                        null,
+
+                    abilitiesTimer:
+                        null,
+
+                    evidenceTimer:
+                        null,
+
+                    nextRoundTimer:
+                        null,
+
+                    botTimer:
                         null
                 };
 
                 const host = {
-
                     id:
                         socket.id,
 
@@ -1534,7 +1528,6 @@ io.on(
         socket.on(
             "joinGame",
             data => {
-
                 const code =
                     String(
                         data.gameCode ||
@@ -1547,7 +1540,6 @@ io.on(
                     getGame(code);
 
                 if (!game) {
-
                     sendError(
                         socket,
                         "Game not found."
@@ -1557,7 +1549,6 @@ io.on(
                 }
 
                 if (game.started) {
-
                     sendError(
                         socket,
                         "That game has already started."
@@ -1570,7 +1561,6 @@ io.on(
                     game.players.length >=
                     game.maxPlayers
                 ) {
-
                     sendError(
                         socket,
                         "That game is full."
@@ -1587,7 +1577,6 @@ io.on(
                     .trim();
 
                 if (!name) {
-
                     sendError(
                         socket,
                         "Please enter a name."
@@ -1605,7 +1594,6 @@ io.on(
                     );
 
                 if (duplicate) {
-
                     sendError(
                         socket,
                         "That name is already being used."
@@ -1615,7 +1603,6 @@ io.on(
                 }
 
                 const player = {
-
                     id:
                         socket.id,
 
@@ -1669,7 +1656,6 @@ io.on(
         socket.on(
             "addBots",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -1706,9 +1692,7 @@ io.on(
                     game.players.length <
                     game.maxPlayers
                 ) {
-
                     const bot = {
-
                         id:
                             `bot-${Date.now()}-${Math.random()
                                 .toString(36)
@@ -1758,7 +1742,6 @@ io.on(
         socket.on(
             "removeBots",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -1796,12 +1779,10 @@ io.on(
 
                     i--
                 ) {
-
                     if (
                         game.players[i]
                             .isBot
                     ) {
-
                         game.players.splice(
                             i,
                             1
@@ -1824,7 +1805,6 @@ io.on(
         socket.on(
             "chatMessage",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -1886,7 +1866,6 @@ io.on(
         socket.on(
             "clearChat",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -1916,7 +1895,6 @@ io.on(
         socket.on(
             "kickPlayer",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -1944,10 +1922,7 @@ io.on(
                     return;
                 }
 
-                if (
-                    player.isBot
-                ) {
-
+                if (player.isBot) {
                     game.players =
                         game.players.filter(
                             p =>
@@ -1968,7 +1943,6 @@ io.on(
                     );
 
                 if (targetSocket) {
-
                     targetSocket.emit(
                         "kicked"
                     );
@@ -1998,7 +1972,6 @@ io.on(
         socket.on(
             "startGame",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -2028,7 +2001,6 @@ io.on(
                     players.length <
                     4
                 ) {
-
                     sendError(
                         socket,
                         "You need at least 4 playing players."
@@ -2084,7 +2056,6 @@ io.on(
         socket.on(
             "submitAnswer",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -2140,7 +2111,6 @@ io.on(
         socket.on(
             "useShield",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -2149,11 +2119,6 @@ io.on(
                 if (!game) {
                     return;
                 }
-
-                /*
-                Shields can be used during
-                discussion OR abilities.
-                */
 
                 if (
                     game.phase !==
@@ -2206,7 +2171,6 @@ io.on(
                     target.id ===
                     player.id
                 ) {
-
                     sendError(
                         socket,
                         "You cannot shield yourself."
@@ -2242,7 +2206,6 @@ io.on(
         socket.on(
             "submitVote",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -2272,17 +2235,11 @@ io.on(
                     return;
                 }
 
-                /*
-                WRONG ANSWERS
-                LOSE THEIR VOTE.
-                */
-
                 if (
                     !game.answerResults[
                         player.id
                     ]
                 ) {
-
                     sendError(
                         socket,
                         "You answered incorrectly and cannot vote this round."
@@ -2336,7 +2293,6 @@ io.on(
         socket.on(
             "endGame",
             data => {
-
                 const game =
                     getGame(
                         data.gameCode
@@ -2353,20 +2309,9 @@ io.on(
                     return;
                 }
 
-                if (game.answerTimer) {
-                    clearTimeout(
-                        game.answerTimer
-                    );
-                }
-
-                io.to(game.code).emit(
-                    "gameOver",
-                    {
-                        message:
-                            "The host ended the game.",
-
-                        roles: []
-                    }
+                endGame(
+                    game,
+                    "The host ended the game."
                 );
 
                 games.delete(
@@ -2382,7 +2327,6 @@ io.on(
         socket.on(
             "disconnect",
             () => {
-
                 console.log(
                     "Player disconnected:",
                     socket.id
@@ -2394,7 +2338,6 @@ io.on(
                         game
                     ] of games
                 ) {
-
                     const player =
                         game.players.find(
                             p =>
@@ -2414,21 +2357,9 @@ io.on(
                         game.hostId ===
                         socket.id
                     ) {
-
-                        if (game.answerTimer) {
-                            clearTimeout(
-                                game.answerTimer
-                            );
-                        }
-
-                        io.to(code).emit(
-                            "gameOver",
-                            {
-                                message:
-                                    "The host disconnected. The game has ended.",
-
-                                roles: []
-                            }
+                        endGame(
+                            game,
+                            "The host disconnected. The game has ended."
                         );
 
                         games.delete(
@@ -2449,29 +2380,23 @@ io.on(
                             );
 
                         /*
-                        IF GAME IS CURRENTLY
-                        WAITING FOR ANSWERS OR
-                        VOTES, RECHECK.
+                        RECHECK ACTIVE PHASES
                         */
 
                         if (
                             game.started
                         ) {
-
                             if (
                                 game.phase ===
                                 "answer"
                             ) {
-
                                 checkAllAnswers(
                                     game
                                 );
-
                             } else if (
                                 game.phase ===
                                 "voting"
                             ) {
-
                                 checkAllVotes(
                                     game
                                 );
@@ -2497,7 +2422,6 @@ SERVE BAD APPLES+
 app.get(
     "/",
     (req, res) => {
-
         res.sendFile(
             path.join(
                 __dirname,
@@ -2515,7 +2439,6 @@ server.listen(
     PORT,
     "0.0.0.0",
     () => {
-
         console.log(
             `Bad Apples+ server running on port ${PORT}`
         );
