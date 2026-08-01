@@ -209,10 +209,6 @@ button:disabled {
     font-size: 12px;
 }
 
-/* =========================================================
-PHASE UI
-========================================================= */
-
 .phaseHeader {
     background: #111;
     border: 2px solid #555;
@@ -322,10 +318,9 @@ PHASE UI
 <!-- CONNECTION -->
 
 <div class="box" id="connectionBox">
+    <h2>Connecting...</h2>
 
 ```
-<h2>Connecting...</h2>
-
 <p id="connectionStatus">
     Connecting to server...
 </p>
@@ -336,10 +331,9 @@ PHASE UI
 <!-- MAIN MENU -->
 
 <div class="box hidden" id="mainMenu">
+    <h2>Multiplayer</h2>
 
 ```
-<h2>Multiplayer</h2>
-
 <p>
     Create a game or join an existing game.
 </p>
@@ -358,10 +352,9 @@ PHASE UI
 <!-- CREATE GAME -->
 
 <div class="box hidden" id="createGame">
+    <h2>Create Game</h2>
 
 ```
-<h2>Create Game</h2>
-
 <label>Your Name</label>
 <br>
 
@@ -377,7 +370,6 @@ PHASE UI
 <br>
 
 <select id="gameMode">
-
     <option value="classic">
         Classic Mode
     </option>
@@ -385,7 +377,6 @@ PHASE UI
     <option value="quick">
         Quick Play
     </option>
-
 </select>
 
 <br>
@@ -394,7 +385,6 @@ PHASE UI
 <br>
 
 <select id="hostPlaying">
-
     <option value="yes">
         Yes — I want to play
     </option>
@@ -402,7 +392,6 @@ PHASE UI
     <option value="no">
         No — I want to host only
     </option>
-
 </select>
 
 <br>
@@ -434,10 +423,9 @@ PHASE UI
 <!-- JOIN GAME -->
 
 <div class="box hidden" id="joinGame">
+    <h2>Join Game</h2>
 
 ```
-<h2>Join Game</h2>
-
 <input
     id="joinName"
     maxlength="20"
@@ -469,10 +457,9 @@ PHASE UI
 <!-- LOBBY -->
 
 <div class="box hidden" id="lobby">
+    <h2>Game Lobby</h2>
 
 ```
-<h2>Game Lobby</h2>
-
 <p>
     Share this code with your friends:
 </p>
@@ -495,7 +482,6 @@ PHASE UI
     id="botControls"
     class="botControls hidden"
 >
-
     <h3>🤖 Bot Controls</h3>
 
     <p class="small">
@@ -525,11 +511,9 @@ PHASE UI
     <button onclick="removeBots()">
         Remove Bots
     </button>
-
 </div>
 
 <div id="hostControls" class="hidden">
-
     <hr>
 
     <h3>Host Controls</h3>
@@ -541,7 +525,6 @@ PHASE UI
     <button onclick="endGameForEveryone()">
         End Game
     </button>
-
 </div>
 
 <hr>
@@ -554,7 +537,6 @@ PHASE UI
     id="chatControls"
     class="chatControls"
 >
-
     <input
         id="chatInput"
         maxlength="300"
@@ -565,7 +547,6 @@ PHASE UI
     <button onclick="sendChatMessage()">
         Send
     </button>
-
 </div>
 
 <div
@@ -579,7 +560,6 @@ PHASE UI
     id="moderationControls"
     class="hidden"
 >
-
     <hr>
 
     <h3>Chat Moderation</h3>
@@ -587,7 +567,6 @@ PHASE UI
     <button onclick="clearChat()">
         Clear Chat
     </button>
-
 </div>
 ```
 
@@ -596,10 +575,9 @@ PHASE UI
 <!-- ROLE REVEAL -->
 
 <div class="box hidden" id="roleReveal">
+    <h2>Your Role</h2>
 
 ```
-<h2>Your Role</h2>
-
 <div
     id="myRoleBox"
     class="roleBox"
@@ -617,10 +595,9 @@ PHASE UI
 <!-- HOST ROLE VIEW -->
 
 <div class="box hidden" id="hostRoleView">
+    <h2>Host Role Overview</h2>
 
 ```
-<h2>Host Role Overview</h2>
-
 <p>
     You are hosting as a spectator.
     You can see the roles of all players.
@@ -709,8 +686,6 @@ PHASE UI
 
     <h3>⚡ Ability Phase</h3>
 
-    <!-- RED APPLE -->
-
     <div
         id="shieldAbility"
         class="hidden"
@@ -731,8 +706,6 @@ PHASE UI
         </button>
 
     </div>
-
-    <!-- BAD APPLE -->
 
     <div
         id="badAppleAbility"
@@ -758,8 +731,6 @@ PHASE UI
 
     </div>
 
-    <!-- BANANA -->
-
     <div
         id="bananaAbility"
         class="hidden"
@@ -779,8 +750,6 @@ PHASE UI
         </button>
 
     </div>
-
-    <!-- NO ABILITY -->
 
     <div
         id="noAbility"
@@ -891,46 +860,32 @@ PHASE UI
 
 <script>
 
-/* =========================================================
-SOCKET.IO
-========================================================= */
-
 const socket = io();
 
 let connected = false;
 
-socket.on(
-    "connect",
-    () => {
+socket.on("connect", () => {
 
-        connected = true;
+    connected = true;
 
-        hide("connectionBox");
-        show("mainMenu");
+    hide("connectionBox");
+    show("mainMenu");
 
-    }
-);
+});
 
-socket.on(
-    "disconnect",
-    () => {
+socket.on("disconnect", () => {
 
-        connected = false;
+    connected = false;
 
-        show("connectionBox");
-        hide("mainMenu");
+    show("connectionBox");
+    hide("mainMenu");
 
-        document.getElementById(
-            "connectionStatus"
-        ).innerText =
-            "Disconnected from server.";
+    document.getElementById(
+        "connectionStatus"
+    ).innerText =
+        "Disconnected from server.";
 
-    }
-);
-
-/* =========================================================
-LOCAL STATE
-========================================================= */
+});
 
 let myName = "";
 let myRole = null;
@@ -950,10 +905,6 @@ let hasUsedAbility = false;
 let hasVoted = false;
 
 let countdownInterval = null;
-
-/* =========================================================
-UTILITY
-========================================================= */
 
 function hide(id) {
 
@@ -1009,23 +960,19 @@ function setPhase(
     description
 ) {
 
-    currentPhase =
-        phase;
+    currentPhase = phase;
 
     document.getElementById(
         "gameStatus"
-    ).innerText =
-        title;
+    ).innerText = title;
 
     document.getElementById(
         "phaseTitle"
-    ).innerText =
-        title;
+    ).innerText = title;
 
     document.getElementById(
         "phaseDescription"
-    ).innerText =
-        description;
+    ).innerText = description;
 
 }
 
@@ -1037,16 +984,13 @@ function resetPhaseContent() {
     hide("evidenceContent");
     hide("roundResultsContent");
 
-    if (
-        countdownInterval
-    ) {
+    if (countdownInterval) {
 
         clearInterval(
             countdownInterval
         );
 
-        countdownInterval =
-            null;
+        countdownInterval = null;
 
     }
 
@@ -1070,10 +1014,6 @@ function resetRoundState() {
 
 }
 
-/* =========================================================
-MENU
-========================================================= */
-
 function showCreateGame() {
 
     hideAllScreens();
@@ -1094,10 +1034,6 @@ function returnToMenu() {
     show("mainMenu");
 
 }
-
-/* =========================================================
-CREATE GAME
-========================================================= */
 
 function createGame() {
 
@@ -1125,8 +1061,7 @@ function createGame() {
             "hostPlaying"
         ).value === "yes";
 
-    isSpectatorHost =
-        !isPlaying;
+    isSpectatorHost = !isPlaying;
 
     const mode =
         document.getElementById(
@@ -1151,10 +1086,6 @@ function createGame() {
     );
 
 }
-
-/* =========================================================
-JOIN GAME
-========================================================= */
 
 function joinGame() {
 
@@ -1206,10 +1137,6 @@ function joinGame() {
 
 }
 
-/* =========================================================
-GAME CREATED / JOINED
-========================================================= */
-
 socket.on(
     "gameCreated",
     data => {
@@ -1233,10 +1160,6 @@ socket.on(
 
     }
 );
-
-/* =========================================================
-LOBBY
-========================================================= */
 
 function showLobby() {
 
@@ -1310,35 +1233,28 @@ function renderLobbyPlayers() {
                     player
                 );
 
-            if (
-                player.isHost
-            ) {
+            if (player.isHost) {
 
                 text +=
                     ' <span class="hostBadge">👑 Host</span>';
 
             }
 
-            if (
-                player.isBot
-            ) {
+            if (player.isBot) {
 
                 text +=
                     ' <span class="botBadge">🤖 Bot</span>';
 
             }
 
-            if (
-                player.isPlaying === false
-            ) {
+            if (player.isPlaying === false) {
 
                 text +=
                     ' <span class="spectatorBadge">👁️ Spectator</span>';
 
             }
 
-            div.innerHTML =
-                text;
+            div.innerHTML = text;
 
             if (
                 isHost &&
@@ -1375,10 +1291,6 @@ function renderLobbyPlayers() {
 
 }
 
-/* =========================================================
-BOT CONTROLS
-========================================================= */
-
 function addBots() {
 
     if (!isHost) return;
@@ -1406,8 +1318,7 @@ function addBots() {
     socket.emit(
         "addBots",
         {
-            gameCode:
-                myGameCode,
+            gameCode: myGameCode,
             count
         }
     );
@@ -1441,17 +1352,12 @@ function removeBots() {
     socket.emit(
         "removeBots",
         {
-            gameCode:
-                myGameCode,
+            gameCode: myGameCode,
             count
         }
     );
 
 }
-
-/* =========================================================
-HOST CONTROLS
-========================================================= */
 
 function kickPlayer(id) {
 
@@ -1460,10 +1366,8 @@ function kickPlayer(id) {
     socket.emit(
         "kickPlayer",
         {
-            gameCode:
-                myGameCode,
-            playerId:
-                id
+            gameCode: myGameCode,
+            playerId: id
         }
     );
 
@@ -1476,8 +1380,7 @@ function startMultiplayerGame() {
     socket.emit(
         "startGame",
         {
-            gameCode:
-                myGameCode
+            gameCode: myGameCode
         }
     );
 
@@ -1496,8 +1399,7 @@ function endGameForEveryone() {
         socket.emit(
             "endGame",
             {
-                gameCode:
-                    myGameCode
+                gameCode: myGameCode
             }
         );
 
@@ -1505,15 +1407,9 @@ function endGameForEveryone() {
 
 }
 
-/* =========================================================
-CHAT
-========================================================= */
-
 function sendChatMessage() {
 
-    if (
-        isSpectatorHost
-    ) return;
+    if (isSpectatorHost) return;
 
     const input =
         document.getElementById(
@@ -1528,8 +1424,7 @@ function sendChatMessage() {
     socket.emit(
         "chatMessage",
         {
-            gameCode:
-                myGameCode,
+            gameCode: myGameCode,
             message
         }
     );
@@ -1588,8 +1483,7 @@ function clearChat() {
     socket.emit(
         "clearChat",
         {
-            gameCode:
-                myGameCode
+            gameCode: myGameCode
         }
     );
 
@@ -1609,16 +1503,11 @@ socket.on(
     }
 );
 
-/* =========================================================
-GAME START
-========================================================= */
-
 socket.on(
     "gameStarted",
     data => {
 
-        currentGameState =
-            data;
+        currentGameState = data;
 
         hideAllScreens();
         show("game");
@@ -1660,30 +1549,20 @@ function renderGamePlayers() {
                     player
                 );
 
-            if (
-                player.isBot
-            ) {
+            if (player.isBot) {
 
-                text +=
-                    " 🤖";
+                text += " 🤖";
 
             }
 
-            div.innerHTML =
-                text;
+            div.innerHTML = text;
 
-            box.appendChild(
-                div
-            );
+            box.appendChild(div);
 
         }
     );
 
 }
-
-/* =========================================================
-ROLE REVEAL
-========================================================= */
 
 socket.on(
     "roleAssigned",
@@ -1719,9 +1598,7 @@ socket.on(
     }
 );
 
-function getRoleDescription(
-    role
-) {
+function getRoleDescription(role) {
 
     if (
         role === "Bad Apple"
@@ -1785,9 +1662,7 @@ socket.on(
                     Role:
                     ${escapeHTML(player.role)}`;
 
-                box.appendChild(
-                    div
-                );
+                box.appendChild(div);
 
             }
         );
@@ -1801,10 +1676,6 @@ function closeHostRoleView() {
     show("game");
 
 }
-
-/* =========================================================
-ANSWER PHASE
-========================================================= */
 
 socket.on(
     "newQuestion",
@@ -1830,9 +1701,7 @@ socket.on(
     }
 );
 
-function renderQuestion(
-    data
-) {
+function renderQuestion(data) {
 
     const box =
         document.getElementById(
@@ -1896,13 +1765,9 @@ function renderQuestion(
 
 }
 
-function submitAnswer(
-    answer
-) {
+function submitAnswer(answer) {
 
-    if (
-        hasAnswered
-    ) {
+    if (hasAnswered) {
         return;
     }
 
@@ -1911,9 +1776,7 @@ function submitAnswer(
     socket.emit(
         "submitAnswer",
         {
-            gameCode:
-                myGameCode,
-
+            gameCode: myGameCode,
             answer
         }
     );
@@ -1954,10 +1817,6 @@ function submitTypedAnswer() {
 
 }
 
-/* =========================================================
-DISCUSSION PHASE
-========================================================= */
-
 socket.on(
     "discussionStarted",
     data => {
@@ -1981,9 +1840,7 @@ socket.on(
                 data.duration
             ) || 0;
 
-        if (
-            duration > 0
-        ) {
+        if (duration > 0) {
 
             startCountdown(
                 "discussionTimer",
@@ -2012,13 +1869,17 @@ function startCountdown(
             elementId
         );
 
-    if (
-        countdownInterval
-    ) {
+    if (!element) {
+        return;
+    }
+
+    if (countdownInterval) {
 
         clearInterval(
             countdownInterval
         );
+
+        countdownInterval = null;
 
     }
 
@@ -2039,24 +1900,18 @@ function startCountdown(
 
         const minutes =
             Math.floor(
-                (
-                    remaining % 3600
-                ) / 60
+                (remaining % 3600) / 60
             );
 
         const secs =
             remaining % 60;
 
-        if (
-            hours > 0
-        ) {
+        if (hours > 0) {
 
             element.innerText =
                 `${hours}h ${minutes}m ${secs}s`;
 
-        } else if (
-            minutes > 0
-        ) {
+        } else if (minutes > 0) {
 
             element.innerText =
                 `${minutes}m ${secs}s`;
@@ -2064,20 +1919,17 @@ function startCountdown(
         } else {
 
             element.innerText =
-                `${secs} seconds`;
+                `${secs}s`;
 
         }
 
-        if (
-            remaining <= 0
-        ) {
+        if (remaining <= 0) {
 
             clearInterval(
                 countdownInterval
             );
 
-            countdownInterval =
-                null;
+            countdownInterval = null;
 
             element.innerText =
                 "Time's up!";
@@ -2101,10 +1953,6 @@ function startCountdown(
         );
 
 }
-
-/* =========================================================
-ABILITY PHASE
-========================================================= */
 
 socket.on(
     "abilityPhaseStarted",
@@ -2132,9 +1980,7 @@ socket.on(
     }
 );
 
-function renderAbilityPhase(
-    data
-) {
+function renderAbilityPhase(data) {
 
     hide("shieldAbility");
     hide("badAppleAbility");
@@ -2191,10 +2037,6 @@ function renderAbilityPhase(
 
 }
 
-/* =========================================================
-BAD APPLE HINT
-========================================================= */
-
 socket.on(
     "badAppleHint",
     data => {
@@ -2215,13 +2057,7 @@ socket.on(
     }
 );
 
-/* =========================================================
-SHIELD TARGETS
-========================================================= */
-
-function renderShieldTargets(
-    players
-) {
+function renderShieldTargets(players) {
 
     const box =
         document.getElementById(
@@ -2292,17 +2128,9 @@ function renderShieldTargets(
 
 }
 
-/* =========================================================
-USE ABILITY
-========================================================= */
+function useShieldAbility(target) {
 
-function useShieldAbility(
-    target
-) {
-
-    if (
-        hasUsedAbility
-    ) {
+    if (hasUsedAbility) {
         return;
     }
 
@@ -2311,12 +2139,8 @@ function useShieldAbility(
     socket.emit(
         "useAbility",
         {
-            gameCode:
-                myGameCode,
-
-            ability:
-                "shield",
-
+            gameCode: myGameCode,
+            ability: "shield",
             target
         }
     );
@@ -2335,15 +2159,9 @@ function useShieldAbility(
 
 }
 
-/* =========================================================
-SKIP ABILITY
-========================================================= */
-
 function skipAbility() {
 
-    if (
-        hasUsedAbility
-    ) {
+    if (hasUsedAbility) {
         return;
     }
 
@@ -2352,11 +2170,8 @@ function skipAbility() {
     socket.emit(
         "useAbility",
         {
-            gameCode:
-                myGameCode,
-
-            ability:
-                "none"
+            gameCode: myGameCode,
+            ability: "none"
         }
     );
 
@@ -2374,15 +2189,9 @@ function skipAbility() {
 
 }
 
-/* =========================================================
-CONTINUE ABILITY
-========================================================= */
-
 function continueAbility() {
 
-    if (
-        hasUsedAbility
-    ) {
+    if (hasUsedAbility) {
         return;
     }
 
@@ -2391,23 +2200,14 @@ function continueAbility() {
     socket.emit(
         "useAbility",
         {
-            gameCode:
-                myGameCode,
-
-            ability:
-                "continue"
+            gameCode: myGameCode,
+            ability: "continue"
         }
     );
 
 }
 
-/* =========================================================
-BANANA INFORMATION
-========================================================= */
-
-function renderBananaInformation(
-    players
-) {
+function renderBananaInformation(players) {
 
     const box =
         document.getElementById(
@@ -2457,17 +2257,13 @@ function renderBananaInformation(
 
             div.innerHTML = `
                 <strong>
-                    ${escapeHTML(
-                        player.name
-                    )}
+                    ${escapeHTML(player.name)}
                 </strong>
 
                 <br>
 
                 Role:
-                ${escapeHTML(
-                    role
-                )}
+                ${escapeHTML(role)}
 
                 <br>
 
@@ -2475,18 +2271,12 @@ function renderBananaInformation(
                 ${shielded}
             `;
 
-            box.appendChild(
-                div
-            );
+            box.appendChild(div);
 
         }
     );
 
 }
-
-/* =========================================================
-VOTING PHASE
-========================================================= */
 
 socket.on(
     "votingStarted",
@@ -2522,9 +2312,7 @@ socket.on(
     }
 );
 
-function renderVoteTargets(
-    players
-) {
+function renderVoteTargets(players) {
 
     const box =
         document.getElementById(
@@ -2544,7 +2332,9 @@ function renderVoteTargets(
             if (
                 name === myName
             ) {
+
                 return;
+
             }
 
             const button =
@@ -2573,13 +2363,9 @@ function renderVoteTargets(
 
 }
 
-function submitVote(
-    player
-) {
+function submitVote(player) {
 
-    if (
-        hasVoted
-    ) {
+    if (hasVoted) {
         return;
     }
 
@@ -2588,11 +2374,8 @@ function submitVote(
     socket.emit(
         "submitVote",
         {
-            gameCode:
-                myGameCode,
-
-            vote:
-                player
+            gameCode: myGameCode,
+            vote: player
         }
     );
 
@@ -2603,10 +2386,6 @@ function submitVote(
     show("voteSubmitted");
 
 }
-
-/* =========================================================
-EVIDENCE PHASE
-========================================================= */
 
 socket.on(
     "evidencePhaseStarted",
@@ -2635,8 +2414,7 @@ socket.on(
         box.innerHTML = "";
 
         const incorrectPlayers =
-            data.incorrectPlayers ||
-            [];
+            data.incorrectPlayers || [];
 
         if (
             incorrectPlayers.length > 0
@@ -2668,16 +2446,12 @@ socket.on(
                     div.innerHTML = `
                         ❌
                         <strong>
-                            ${escapeHTML(
-                                player
-                            )}
+                            ${escapeHTML(player)}
                         </strong>
                         answered incorrectly.
                     `;
 
-                    box.appendChild(
-                        div
-                    );
+                    box.appendChild(div);
 
                 }
             );
@@ -2700,9 +2474,7 @@ socket.on(
         const votesValid =
             data.votesValid === true;
 
-        if (
-            votesValid
-        ) {
+        if (votesValid) {
 
             validity.className =
                 "validVote";
@@ -2742,10 +2514,6 @@ socket.on(
     }
 );
 
-/* =========================================================
-ROUND RESULTS
-========================================================= */
-
 socket.on(
     "roundResult",
     data => {
@@ -2773,26 +2541,20 @@ socket.on(
 
         details.innerHTML = "";
 
-        if (
-            data.eliminated
-        ) {
+        if (data.eliminated) {
 
             details.innerHTML += `
                 <p>
                     🍎 Eliminated:
                     <strong>
-                        ${escapeHTML(
-                            data.eliminated
-                        )}
+                        ${escapeHTML(data.eliminated)}
                     </strong>
                 </p>
             `;
 
         }
 
-        if (
-            data.voteInvalid
-        ) {
+        if (data.voteInvalid) {
 
             details.innerHTML += `
                 <p class="danger">
@@ -2804,17 +2566,13 @@ socket.on(
 
         }
 
-        if (
-            data.shielded
-        ) {
+        if (data.shielded) {
 
             details.innerHTML += `
                 <p class="good">
                     🛡️
                     <strong>
-                        ${escapeHTML(
-                            data.shielded
-                        )}
+                        ${escapeHTML(data.shielded)}
                     </strong>
                     was protected by a Shield Vote.
                 </p>
@@ -2825,24 +2583,17 @@ socket.on(
     }
 );
 
-/* =========================================================
-GAME OVER
-========================================================= */
-
 socket.on(
     "gameOver",
     data => {
 
-        if (
-            countdownInterval
-        ) {
+        if (countdownInterval) {
 
             clearInterval(
                 countdownInterval
             );
 
-            countdownInterval =
-                null;
+            countdownInterval = null;
 
         }
 
@@ -2862,9 +2613,7 @@ socket.on(
 
         box.innerHTML = "";
 
-        if (
-            data.roles
-        ) {
+        if (data.roles) {
 
             data.roles.forEach(
                 player => {
@@ -2874,16 +2623,12 @@ socket.on(
                         <div class="playerCard">
 
                             <strong>
-                                ${escapeHTML(
-                                    player.name
-                                )}
+                                ${escapeHTML(player.name)}
                             </strong>
 
                             <br>
 
-                            ${escapeHTML(
-                                player.role
-                            )}
+                            ${escapeHTML(player.role)}
 
                         </div>
 
@@ -2897,39 +2642,22 @@ socket.on(
     }
 );
 
-/* =========================================================
-SERVER ERRORS
-========================================================= */
-
 socket.on(
     "errorMessage",
     message => {
 
-        alert(
-            message
-        );
-
-        /*
-        If the server rejected an ability,
-        allow the player to try again.
-        */
+        alert(message);
 
         if (
-            currentPhase ===
-            "ability"
+            currentPhase === "ability"
         ) {
 
-            hasUsedAbility =
-                false;
+            hasUsedAbility = false;
 
         }
 
     }
 );
-
-/* =========================================================
-INITIAL STATE
-========================================================= */
 
 hideAllScreens();
 
