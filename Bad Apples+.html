@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -321,29 +322,36 @@ PHASE UI
 <!-- CONNECTION -->
 
 <div class="box" id="connectionBox">
-    <h2>Connecting...</h2>
-    <p id="connectionStatus">
-        Connecting to server...
-    </p>
+
+```
+<h2>Connecting...</h2>
+
+<p id="connectionStatus">
+    Connecting to server...
+</p>
+```
+
 </div>
 
 <!-- MAIN MENU -->
 
 <div class="box hidden" id="mainMenu">
 
-    <h2>Multiplayer</h2>
+```
+<h2>Multiplayer</h2>
 
-    <p>
-        Create a game or join an existing game.
-    </p>
+<p>
+    Create a game or join an existing game.
+</p>
 
-    <button onclick="showCreateGame()">
-        Create Game
-    </button>
+<button onclick="showCreateGame()">
+    Create Game
+</button>
 
-    <button onclick="showJoinGame()">
-        Join Game
-    </button>
+<button onclick="showJoinGame()">
+    Join Game
+</button>
+```
 
 </div>
 
@@ -351,69 +359,75 @@ PHASE UI
 
 <div class="box hidden" id="createGame">
 
-    <h2>Create Game</h2>
+```
+<h2>Create Game</h2>
 
-    <label>Your Name</label>
-    <br>
+<label>Your Name</label>
+<br>
 
-    <input
-        id="hostName"
-        maxlength="20"
-        placeholder="Enter your name"
-    >
+<input
+    id="hostName"
+    maxlength="20"
+    placeholder="Enter your name"
+>
 
-    <br>
+<br>
 
-    <label>Game Mode</label>
-    <br>
+<label>Game Mode</label>
+<br>
 
-    <select id="gameMode">
-        <option value="classic">
-            Classic Mode
-        </option>
+<select id="gameMode">
 
-        <option value="quick">
-            Quick Play
-        </option>
-    </select>
+    <option value="classic">
+        Classic Mode
+    </option>
 
-    <br>
+    <option value="quick">
+        Quick Play
+    </option>
 
-    <label>Host Playing?</label>
-    <br>
+</select>
 
-    <select id="hostPlaying">
-        <option value="yes">
-            Yes — I want to play
-        </option>
+<br>
 
-        <option value="no">
-            No — I want to host only
-        </option>
-    </select>
+<label>Host Playing?</label>
+<br>
 
-    <br>
+<select id="hostPlaying">
 
-    <label>Maximum Players</label>
-    <br>
+    <option value="yes">
+        Yes — I want to play
+    </option>
 
-    <input
-        id="maxPlayers"
-        type="number"
-        min="4"
-        max="20"
-        value="10"
-    >
+    <option value="no">
+        No — I want to host only
+    </option>
 
-    <br>
+</select>
 
-    <button onclick="createGame()">
-        Create Game
-    </button>
+<br>
 
-    <button onclick="returnToMenu()">
-        Back
-    </button>
+<label>Maximum Players</label>
+<br>
+
+<input
+    id="maxPlayers"
+    type="number"
+    min="4"
+    max="20"
+    value="10"
+>
+
+<br>
+
+<button onclick="createGame()">
+    Create Game
+</button>
+
+<button onclick="returnToMenu()">
+    Back
+</button>
+```
 
 </div>
 
@@ -421,32 +435,34 @@ PHASE UI
 
 <div class="box hidden" id="joinGame">
 
-    <h2>Join Game</h2>
+```
+<h2>Join Game</h2>
 
-    <input
-        id="joinName"
-        maxlength="20"
-        placeholder="Your name"
-    >
+<input
+    id="joinName"
+    maxlength="20"
+    placeholder="Your name"
+>
 
-    <br>
+<br>
 
-    <input
-        id="gameCodeInput"
-        maxlength="6"
-        placeholder="Game Code"
-        style="text-transform:uppercase"
-    >
+<input
+    id="gameCodeInput"
+    maxlength="6"
+    placeholder="Game Code"
+    style="text-transform:uppercase"
+>
 
-    <br>
+<br>
 
-    <button onclick="joinGame()">
-        Join Game
-    </button>
+<button onclick="joinGame()">
+    Join Game
+</button>
 
-    <button onclick="returnToMenu()">
-        Back
-    </button>
+<button onclick="returnToMenu()">
+    Back
+</button>
+```
 
 </div>
 
@@ -454,112 +470,126 @@ PHASE UI
 
 <div class="box hidden" id="lobby">
 
-    <h2>Game Lobby</h2>
+```
+<h2>Game Lobby</h2>
 
-    <p>
-        Share this code with your friends:
+<p>
+    Share this code with your friends:
+</p>
+
+<div class="gameCode" id="displayGameCode">
+    ------
+</div>
+
+<p id="lobbyStatus">
+    Waiting for players...
+</p>
+
+<hr>
+
+<h3>Players</h3>
+
+<div id="lobbyPlayers"></div>
+
+<div
+    id="botControls"
+    class="botControls hidden"
+>
+
+    <h3>🤖 Bot Controls</h3>
+
+    <p class="small">
+        Add bots if you don't have enough human players.
     </p>
 
-    <div class="gameCode" id="displayGameCode">
-        ------
-    </div>
+    <label>
+        Number of Bots
+    </label>
 
-    <p id="lobbyStatus">
-        Waiting for players...
-    </p>
+    <br>
+
+    <input
+        id="botCount"
+        type="number"
+        min="1"
+        max="20"
+        value="1"
+    >
+
+    <br>
+
+    <button onclick="addBots()">
+        Add Bots
+    </button>
+
+    <button onclick="removeBots()">
+        Remove Bots
+    </button>
+
+</div>
+
+<div id="hostControls" class="hidden">
 
     <hr>
 
-    <h3>Players</h3>
+    <h3>Host Controls</h3>
 
-    <div id="lobbyPlayers"></div>
+    <button onclick="startMultiplayerGame()">
+        Start Game
+    </button>
 
-    <div id="botControls" class="botControls hidden">
+    <button onclick="endGameForEveryone()">
+        End Game
+    </button>
 
-        <h3>🤖 Bot Controls</h3>
+</div>
 
-        <p class="small">
-            Add bots if you don't have enough human players.
-        </p>
+<hr>
 
-        <label>
-            Number of Bots
-        </label>
+<h3>Chat</h3>
 
-        <br>
+<div id="chatMessages"></div>
 
-        <input
-            id="botCount"
-            type="number"
-            min="1"
-            max="20"
-            value="1"
-        >
+<div
+    id="chatControls"
+    class="chatControls"
+>
 
-        <br>
+    <input
+        id="chatInput"
+        maxlength="300"
+        placeholder="Type a message..."
+        onkeydown="handleChatKey(event)"
+    >
 
-        <button onclick="addBots()">
-            Add Bots
-        </button>
+    <button onclick="sendChatMessage()">
+        Send
+    </button>
 
-        <button onclick="removeBots()">
-            Remove Bots
-        </button>
+</div>
 
-    </div>
+<div
+    id="spectatorChatNotice"
+    class="small hidden"
+>
+    Spectator hosts cannot send chat messages.
+</div>
 
-    <div id="hostControls" class="hidden">
-
-        <hr>
-
-        <h3>Host Controls</h3>
-
-        <button onclick="startMultiplayerGame()">
-            Start Game
-        </button>
-
-        <button onclick="endGameForEveryone()">
-            End Game
-        </button>
-
-    </div>
+<div
+    id="moderationControls"
+    class="hidden"
+>
 
     <hr>
 
-    <h3>Chat</h3>
+    <h3>Chat Moderation</h3>
 
-    <div id="chatMessages"></div>
+    <button onclick="clearChat()">
+        Clear Chat
+    </button>
 
-    <div id="chatControls" class="chatControls">
-
-        <input
-            id="chatInput"
-            maxlength="300"
-            placeholder="Type a message..."
-            onkeydown="handleChatKey(event)"
-        >
-
-        <button onclick="sendChatMessage()">
-            Send
-        </button>
-
-    </div>
-
-    <div id="spectatorChatNotice" class="small hidden">
-        Spectator hosts cannot send chat messages.
-    </div>
-
-    <div id="moderationControls" class="hidden">
-
-        <hr>
-
-        <h3>Chat Moderation</h3>
-
-        <button onclick="clearChat()">
-            Clear Chat
-        </button>
-
-    </div>
+</div>
+```
 
 </div>
 
@@ -567,15 +597,20 @@ PHASE UI
 
 <div class="box hidden" id="roleReveal">
 
-    <h2>Your Role</h2>
+```
+<h2>Your Role</h2>
 
-    <div id="myRoleBox" class="roleBox"></div>
+<div
+    id="myRoleBox"
+    class="roleBox"
+></div>
 
-    <p id="roleExtraInfo"></p>
+<p id="roleExtraInfo"></p>
 
-    <button onclick="continueAfterRole()">
-        Continue
-    </button>
+<button onclick="continueAfterRole()">
+    Continue
+</button>
+```
 
 </div>
 
@@ -583,18 +618,20 @@ PHASE UI
 
 <div class="box hidden" id="hostRoleView">
 
-    <h2>Host Role Overview</h2>
+```
+<h2>Host Role Overview</h2>
 
-    <p>
-        You are hosting as a spectator.
-        You can see the roles of all players.
-    </p>
+<p>
+    You are hosting as a spectator.
+    You can see the roles of all players.
+</p>
 
-    <div id="allRoles"></div>
+<div id="allRoles"></div>
 
-    <button onclick="closeHostRoleView()">
-        Continue
-    </button>
+<button onclick="closeHostRoleView()">
+    Continue
+</button>
+```
 
 </div>
 
@@ -602,229 +639,235 @@ PHASE UI
 
 <div class="box hidden" id="game">
 
-    <h2 id="gameStatus">
+```
+<h2 id="gameStatus">
+    Game Starting
+</h2>
+
+<div class="phaseHeader">
+
+    <h2 id="phaseTitle">
         Game Starting
     </h2>
 
-    <div class="phaseHeader">
-
-        <h2 id="phaseTitle">
-            Game Starting
-        </h2>
-
-        <p
-            id="phaseDescription"
-            class="phaseDescription"
-        >
-            Waiting for the game to begin...
-        </p>
-
-        <div
-            id="phaseTimer"
-            class="phaseTimer hidden"
-        ></div>
-
-    </div>
-
-    <div id="gamePlayers"></div>
-
-    <hr>
-
-    <h3 id="gameQuestion">
-        Waiting for question...
-    </h3>
-
-    <div id="gameContent"></div>
-
-    <!-- DISCUSSION -->
-
-    <div
-        id="discussionContent"
-        class="discussionBox hidden"
+    <p
+        id="phaseDescription"
+        class="phaseDescription"
     >
-
-        <h3>💬 Discussion Phase</h3>
-
-        <p>
-            Discuss your suspicions with the other players.
-        </p>
-
-        <div
-            id="discussionTimer"
-            class="phaseTimer"
-        >
-            Waiting...
-        </div>
-
-        <p class="small">
-            After discussion, the ability phase will begin.
-        </p>
-
-    </div>
-
-    <!-- ABILITIES -->
+        Waiting for the game to begin...
+    </p>
 
     <div
-        id="abilityContent"
-        class="abilityBox hidden"
+        id="phaseTimer"
+        class="phaseTimer hidden"
+    ></div>
+
+</div>
+
+<div id="gamePlayers"></div>
+
+<hr>
+
+<h3 id="gameQuestion">
+    Waiting for question...
+</h3>
+
+<div id="gameContent"></div>
+
+<!-- DISCUSSION -->
+
+<div
+    id="discussionContent"
+    class="discussionBox hidden"
+>
+
+    <h3>💬 Discussion Phase</h3>
+
+    <p>
+        Discuss your suspicions with the other players.
+    </p>
+
+    <div
+        id="discussionTimer"
+        class="phaseTimer"
     >
-
-        <h3>⚡ Ability Phase</h3>
-
-        <!-- RED APPLE -->
-
-        <div
-            id="shieldAbility"
-            class="hidden"
-        >
-
-            <h4>🛡️ Shield Vote</h4>
-
-            <p>
-                Protect another player from elimination
-                this round.
-                You cannot shield yourself.
-            </p>
-
-            <div id="shieldTargets"></div>
-
-            <button onclick="skipAbility()">
-                Don't Use Ability
-            </button>
-
-        </div>
-
-        <!-- BAD APPLE -->
-
-        <div
-            id="badAppleAbility"
-            class="hidden"
-        >
-
-            <h4>🍎 Bad Apple Hint</h4>
-
-            <div
-                id="badAppleHint"
-                class="hintBox"
-            >
-                Waiting for your hint...
-            </div>
-
-            <button onclick="continueAbility()">
-                Continue
-            </button>
-
-        </div>
-
-        <!-- BANANA -->
-
-        <div
-            id="bananaAbility"
-            class="hidden"
-        >
-
-            <h4>🍌 Banana Information</h4>
-
-            <p>
-                You can see the roles and shielding
-                information of the other players.
-            </p>
-
-            <div id="bananaInformation"></div>
-
-            <button onclick="continueAbility()">
-                Continue
-            </button>
-
-        </div>
-
-        <!-- NO ABILITY -->
-
-        <div
-            id="noAbility"
-            class="hidden"
-        >
-
-            <p>
-                You have no active ability this phase.
-            </p>
-
-            <button onclick="continueAbility()">
-                Continue
-            </button>
-
-        </div>
-
+        Waiting...
     </div>
 
-    <!-- VOTING -->
+    <p class="small">
+        After discussion, the ability phase will begin.
+    </p>
+
+</div>
+
+<!-- ABILITIES -->
+
+<div
+    id="abilityContent"
+    class="abilityBox hidden"
+>
+
+    <h3>⚡ Ability Phase</h3>
+
+    <!-- RED APPLE -->
 
     <div
-        id="votingContent"
+        id="shieldAbility"
         class="hidden"
     >
 
-        <h3>🗳️ Voting Phase</h3>
+        <h4>🛡️ Shield Vote</h4>
 
         <p>
-            Vote for the player you suspect is a Bad Apple.
+            Protect another player from elimination
+            this round.
+            You cannot shield yourself.
         </p>
 
-        <div id="voteTargets"></div>
+        <div id="shieldTargets"></div>
 
-        <div
-            id="voteSubmitted"
-            class="statusMessage hidden"
-        >
-            Vote submitted. Waiting for everyone else...
-        </div>
+        <button onclick="skipAbility()">
+            Don't Use Ability
+        </button>
 
     </div>
 
-    <!-- EVIDENCE -->
+    <!-- BAD APPLE -->
 
     <div
-        id="evidenceContent"
-        class="evidenceBox hidden"
-    >
-
-        <h3>🔎 Evidence Phase</h3>
-
-        <p>
-            The votes have been locked.
-            The results of the answer phase are now being revealed.
-        </p>
-
-        <div id="evidenceResults"></div>
-
-        <div
-            id="voteValidity"
-            class="statusMessage"
-        >
-            Waiting for evidence results...
-        </div>
-
-    </div>
-
-    <!-- ROUND RESULTS -->
-
-    <div
-        id="roundResultsContent"
+        id="badAppleAbility"
         class="hidden"
     >
 
-        <h3>📊 Round Results</h3>
+        <h4>🍎 Bad Apple Hint</h4>
+
+        <p>
+            Your hint reveals the next question.
+        </p>
 
         <div
-            id="roundResultMessage"
-            class="statusMessage"
-        ></div>
+            id="badAppleHint"
+            class="hintBox"
+        >
+            Waiting for your hint...
+        </div>
 
-        <div id="roundResultDetails"></div>
+        <button onclick="continueAbility()">
+            Continue
+        </button>
 
     </div>
 
-    <div id="gameEventLog"></div>
+    <!-- BANANA -->
+
+    <div
+        id="bananaAbility"
+        class="hidden"
+    >
+
+        <h4>🍌 Banana Information</h4>
+
+        <p>
+            You can see the roles and shielding
+            information of the other players.
+        </p>
+
+        <div id="bananaInformation"></div>
+
+        <button onclick="continueAbility()">
+            Continue
+        </button>
+
+    </div>
+
+    <!-- NO ABILITY -->
+
+    <div
+        id="noAbility"
+        class="hidden"
+    >
+
+        <p>
+            You have no active ability this phase.
+        </p>
+
+        <button onclick="continueAbility()">
+            Continue
+        </button>
+
+    </div>
+
+</div>
+
+<!-- VOTING -->
+
+<div
+    id="votingContent"
+    class="hidden"
+>
+
+    <h3>🗳️ Voting Phase</h3>
+
+    <p>
+        Vote for the player you suspect is a Bad Apple.
+    </p>
+
+    <div id="voteTargets"></div>
+
+    <div
+        id="voteSubmitted"
+        class="statusMessage hidden"
+    >
+        Vote submitted. Waiting for everyone else...
+    </div>
+
+</div>
+
+<!-- EVIDENCE -->
+
+<div
+    id="evidenceContent"
+    class="evidenceBox hidden"
+>
+
+    <h3>🔎 Evidence Phase</h3>
+
+    <p>
+        The votes have been locked.
+        The results of the answer phase are now being revealed.
+    </p>
+
+    <div id="evidenceResults"></div>
+
+    <div
+        id="voteValidity"
+        class="statusMessage"
+    >
+        Waiting for evidence results...
+    </div>
+
+</div>
+
+<!-- ROUND RESULTS -->
+
+<div
+    id="roundResultsContent"
+    class="hidden"
+>
+
+    <h3>📊 Round Results</h3>
+
+    <div
+        id="roundResultMessage"
+        class="statusMessage"
+    ></div>
+
+    <div id="roundResultDetails"></div>
+
+</div>
+
+<div id="gameEventLog"></div>
+```
 
 </div>
 
@@ -832,15 +875,17 @@ PHASE UI
 
 <div class="box hidden" id="gameOver">
 
-    <h2>Game Over</h2>
+```
+<h2>Game Over</h2>
 
-    <h3 id="winnerMessage"></h3>
+<h3 id="winnerMessage"></h3>
 
-    <div id="finalRoles"></div>
+<div id="finalRoles"></div>
 
-    <button onclick="location.reload()">
-        Return to Main Menu
-    </button>
+<button onclick="location.reload()">
+    Return to Main Menu
+</button>
+```
 
 </div>
 
@@ -854,28 +899,34 @@ const socket = io();
 
 let connected = false;
 
-socket.on("connect", () => {
+socket.on(
+    "connect",
+    () => {
 
-    connected = true;
+        connected = true;
 
-    hide("connectionBox");
-    show("mainMenu");
+        hide("connectionBox");
+        show("mainMenu");
 
-});
+    }
+);
 
-socket.on("disconnect", () => {
+socket.on(
+    "disconnect",
+    () => {
 
-    connected = false;
+        connected = false;
 
-    show("connectionBox");
-    hide("mainMenu");
+        show("connectionBox");
+        hide("mainMenu");
 
-    document.getElementById(
-        "connectionStatus"
-    ).innerText =
-        "Disconnected from server.";
+        document.getElementById(
+            "connectionStatus"
+        ).innerText =
+            "Disconnected from server.";
 
-});
+    }
+);
 
 /* =========================================================
 LOCAL STATE
@@ -897,6 +948,8 @@ let currentPhase = null;
 let hasAnswered = false;
 let hasUsedAbility = false;
 let hasVoted = false;
+
+let countdownInterval = null;
 
 /* =========================================================
 UTILITY
@@ -983,6 +1036,19 @@ function resetPhaseContent() {
     hide("votingContent");
     hide("evidenceContent");
     hide("roundResultsContent");
+
+    if (
+        countdownInterval
+    ) {
+
+        clearInterval(
+            countdownInterval
+        );
+
+        countdownInterval =
+            null;
+
+    }
 
     document.getElementById(
         "phaseTimer"
@@ -1631,10 +1697,10 @@ socket.on(
 
         let roleClass =
             myRole === "Bad Apple"
-            ? "danger"
-            : myRole === "Banana"
-            ? "warning"
-            : "good";
+                ? "danger"
+                : myRole === "Banana"
+                    ? "warning"
+                    : "good";
 
         document.getElementById(
             "myRoleBox"
@@ -1653,7 +1719,9 @@ socket.on(
     }
 );
 
-function getRoleDescription(role) {
+function getRoleDescription(
+    role
+) {
 
     if (
         role === "Bad Apple"
@@ -1675,9 +1743,12 @@ function getRoleDescription(role) {
 
 }
 
-/* =========================================================
-HOST ROLE OVERVIEW
-========================================================= */
+function continueAfterRole() {
+
+    hide("roleReveal");
+    show("game");
+
+}
 
 socket.on(
     "hostRoleOverview",
@@ -1714,7 +1785,9 @@ socket.on(
                     Role:
                     ${escapeHTML(player.role)}`;
 
-                box.appendChild(div);
+                box.appendChild(
+                    div
+                );
 
             }
         );
@@ -1725,13 +1798,6 @@ socket.on(
 function closeHostRoleView() {
 
     hide("hostRoleView");
-    show("game");
-
-}
-
-function continueAfterRole() {
-
-    hide("roleReveal");
     show("game");
 
 }
@@ -1764,7 +1830,9 @@ socket.on(
     }
 );
 
-function renderQuestion(data) {
+function renderQuestion(
+    data
+) {
 
     const box =
         document.getElementById(
@@ -1794,9 +1862,13 @@ function renderQuestion(data) {
 
                 button.onclick =
                     () =>
-                        submitAnswer(option);
+                        submitAnswer(
+                            option
+                        );
 
-                box.appendChild(button);
+                box.appendChild(
+                    button
+                );
 
             }
         );
@@ -1824,9 +1896,15 @@ function renderQuestion(data) {
 
 }
 
-function submitAnswer(answer) {
+function submitAnswer(
+    answer
+) {
 
-    if (hasAnswered) return;
+    if (
+        hasAnswered
+    ) {
+        return;
+    }
 
     hasAnswered = true;
 
@@ -1854,9 +1932,13 @@ function submitTypedAnswer() {
             "typedAnswer"
         );
 
-    if (!input) return;
+    if (!input) {
+        return;
+    }
 
-    if (!input.value.trim()) {
+    if (
+        !input.value.trim()
+    ) {
 
         alert(
             "Please enter an answer."
@@ -1899,7 +1981,9 @@ socket.on(
                 data.duration
             ) || 0;
 
-        if (duration > 0) {
+        if (
+            duration > 0
+        ) {
 
             startCountdown(
                 "discussionTimer",
@@ -1928,33 +2012,89 @@ function startCountdown(
             elementId
         );
 
+    if (
+        countdownInterval
+    ) {
+
+        clearInterval(
+            countdownInterval
+        );
+
+    }
+
     let remaining =
-        Number(seconds);
+        Math.max(
+            0,
+            Math.floor(
+                Number(seconds)
+            )
+        );
 
-    element.innerText =
-        `${remaining} seconds`;
+    function updateTimer() {
 
-    const interval =
+        const hours =
+            Math.floor(
+                remaining / 3600
+            );
+
+        const minutes =
+            Math.floor(
+                (
+                    remaining % 3600
+                ) / 60
+            );
+
+        const secs =
+            remaining % 60;
+
+        if (
+            hours > 0
+        ) {
+
+            element.innerText =
+                `${hours}h ${minutes}m ${secs}s`;
+
+        } else if (
+            minutes > 0
+        ) {
+
+            element.innerText =
+                `${minutes}m ${secs}s`;
+
+        } else {
+
+            element.innerText =
+                `${secs} seconds`;
+
+        }
+
+        if (
+            remaining <= 0
+        ) {
+
+            clearInterval(
+                countdownInterval
+            );
+
+            countdownInterval =
+                null;
+
+            element.innerText =
+                "Time's up!";
+
+        }
+
+    }
+
+    updateTimer();
+
+    countdownInterval =
         setInterval(
             () => {
 
                 remaining--;
 
-                if (
-                    remaining <= 0
-                ) {
-
-                    clearInterval(interval);
-
-                    element.innerText =
-                        "Time's up!";
-
-                    return;
-
-                }
-
-                element.innerText =
-                    `${remaining} seconds`;
+                updateTimer();
 
             },
             1000
@@ -1980,12 +2120,21 @@ socket.on(
 
         show("abilityContent");
 
-        renderAbilityPhase(data);
+        document.getElementById(
+            "gameQuestion"
+        ).innerText =
+            "Choose your ability.";
+
+        renderAbilityPhase(
+            data || {}
+        );
 
     }
 );
 
-function renderAbilityPhase(data) {
+function renderAbilityPhase(
+    data
+) {
 
     hide("shieldAbility");
     hide("badAppleAbility");
@@ -2004,9 +2153,11 @@ function renderAbilityPhase(data) {
             data.players || []
         );
 
+        return;
+
     }
 
-    else if (
+    if (
         myRole === "Bad Apple"
     ) {
 
@@ -2018,11 +2169,11 @@ function renderAbilityPhase(data) {
             data.hint ||
             "No hint available.";
 
-        hasUsedAbility = true;
+        return;
 
     }
 
-    else if (
+    if (
         myRole === "Banana"
     ) {
 
@@ -2032,19 +2183,45 @@ function renderAbilityPhase(data) {
             data.players || []
         );
 
-        hasUsedAbility = true;
+        return;
 
     }
 
-    else {
-
-        show("noAbility");
-
-    }
+    show("noAbility");
 
 }
 
-function renderShieldTargets(players) {
+/* =========================================================
+BAD APPLE HINT
+========================================================= */
+
+socket.on(
+    "badAppleHint",
+    data => {
+
+        const hintBox =
+            document.getElementById(
+                "badAppleHint"
+            );
+
+        if (!hintBox) {
+            return;
+        }
+
+        hintBox.innerText =
+            data.hint ||
+            "No hint available.";
+
+    }
+);
+
+/* =========================================================
+SHIELD TARGETS
+========================================================= */
+
+function renderShieldTargets(
+    players
+) {
 
     const box =
         document.getElementById(
@@ -2053,17 +2230,41 @@ function renderShieldTargets(players) {
 
     box.innerHTML = "";
 
-    players.forEach(
+    const validTargets =
+        players.filter(
+            player => {
+
+                const name =
+                    typeof player === "string"
+                        ? player
+                        : player.name;
+
+                return (
+                    name &&
+                    name !== myName
+                );
+
+            }
+        );
+
+    if (
+        validTargets.length === 0
+    ) {
+
+        box.innerHTML =
+            "<p>No valid players to shield.</p>";
+
+        return;
+
+    }
+
+    validTargets.forEach(
         player => {
 
             const name =
                 typeof player === "string"
                     ? player
                     : player.name;
-
-            if (
-                name === myName
-            ) return;
 
             const button =
                 document.createElement(
@@ -2078,18 +2279,32 @@ function renderShieldTargets(players) {
 
             button.onclick =
                 () =>
-                    useShieldAbility(name);
+                    useShieldAbility(
+                        name
+                    );
 
-            box.appendChild(button);
+            box.appendChild(
+                button
+            );
 
         }
     );
 
 }
 
-function useShieldAbility(target) {
+/* =========================================================
+USE ABILITY
+========================================================= */
 
-    if (hasUsedAbility) return;
+function useShieldAbility(
+    target
+) {
+
+    if (
+        hasUsedAbility
+    ) {
+        return;
+    }
 
     hasUsedAbility = true;
 
@@ -2108,14 +2323,29 @@ function useShieldAbility(target) {
 
     document.getElementById(
         "shieldAbility"
-    ).innerHTML =
-        "<p>🛡️ Shield activated. Waiting for the voting phase...</p>";
+    ).innerHTML = `
+        <p>
+            🛡️ Shield activated.
+        </p>
+
+        <p class="small">
+            Waiting for the voting phase...
+        </p>
+    `;
 
 }
 
+/* =========================================================
+SKIP ABILITY
+========================================================= */
+
 function skipAbility() {
 
-    if (hasUsedAbility) return;
+    if (
+        hasUsedAbility
+    ) {
+        return;
+    }
 
     hasUsedAbility = true;
 
@@ -2132,14 +2362,29 @@ function skipAbility() {
 
     document.getElementById(
         "shieldAbility"
-    ).innerHTML =
-        "<p>Ability skipped. Waiting for the voting phase...</p>";
+    ).innerHTML = `
+        <p>
+            Ability skipped.
+        </p>
+
+        <p class="small">
+            Waiting for the voting phase...
+        </p>
+    `;
 
 }
 
+/* =========================================================
+CONTINUE ABILITY
+========================================================= */
+
 function continueAbility() {
 
-    if (hasUsedAbility) return;
+    if (
+        hasUsedAbility
+    ) {
+        return;
+    }
 
     hasUsedAbility = true;
 
@@ -2156,7 +2401,13 @@ function continueAbility() {
 
 }
 
-function renderBananaInformation(players) {
+/* =========================================================
+BANANA INFORMATION
+========================================================= */
+
+function renderBananaInformation(
+    players
+) {
 
     const box =
         document.getElementById(
@@ -2165,8 +2416,27 @@ function renderBananaInformation(players) {
 
     box.innerHTML = "";
 
+    if (
+        players.length === 0
+    ) {
+
+        box.innerHTML =
+            "<p>No player information available.</p>";
+
+        return;
+
+    }
+
     players.forEach(
         player => {
+
+            if (
+                player.name === myName
+            ) {
+
+                return;
+
+            }
 
             const div =
                 document.createElement(
@@ -2176,23 +2446,38 @@ function renderBananaInformation(players) {
             div.className =
                 "playerCard";
 
-            div.innerHTML =
-                `<strong>
-                ${escapeHTML(player.name)}
+            const role =
+                player.role ||
+                "Hidden";
+
+            const shielded =
+                player.shielded
+                    ? "Yes"
+                    : "No";
+
+            div.innerHTML = `
+                <strong>
+                    ${escapeHTML(
+                        player.name
+                    )}
                 </strong>
+
                 <br>
+
                 Role:
                 ${escapeHTML(
-                    player.role ||
-                    "Hidden"
+                    role
                 )}
-                <br>
-                Shielded:
-                ${player.shielded
-                    ? "Yes"
-                    : "No"}`;
 
-            box.appendChild(div);
+                <br>
+
+                Shielded:
+                ${shielded}
+            `;
+
+            box.appendChild(
+                div
+            );
 
         }
     );
@@ -2228,6 +2513,8 @@ socket.on(
             "hidden"
         );
 
+        hasVoted = false;
+
         renderVoteTargets(
             data.players || []
         );
@@ -2235,7 +2522,9 @@ socket.on(
     }
 );
 
-function renderVoteTargets(players) {
+function renderVoteTargets(
+    players
+) {
 
     const box =
         document.getElementById(
@@ -2254,7 +2543,9 @@ function renderVoteTargets(players) {
 
             if (
                 name === myName
-            ) return;
+            ) {
+                return;
+            }
 
             const button =
                 document.createElement(
@@ -2269,18 +2560,28 @@ function renderVoteTargets(players) {
 
             button.onclick =
                 () =>
-                    submitVote(name);
+                    submitVote(
+                        name
+                    );
 
-            box.appendChild(button);
+            box.appendChild(
+                button
+            );
 
         }
     );
 
 }
 
-function submitVote(player) {
+function submitVote(
+    player
+) {
 
-    if (hasVoted) return;
+    if (
+        hasVoted
+    ) {
+        return;
+    }
 
     hasVoted = true;
 
@@ -2316,7 +2617,7 @@ socket.on(
         setPhase(
             "evidence",
             "Evidence Phase",
-            "The answer results are being revealed."
+            "The results of the Answer Phase have been revealed."
         );
 
         show("evidenceContent");
@@ -2324,7 +2625,7 @@ socket.on(
         document.getElementById(
             "gameQuestion"
         ).innerText =
-            "Evidence from the Answer Phase";
+            "🔎 Evidence from the Answer Phase";
 
         const box =
             document.getElementById(
@@ -2333,14 +2634,27 @@ socket.on(
 
         box.innerHTML = "";
 
-        const incorrect =
-            data.incorrectPlayers || [];
+        const incorrectPlayers =
+            data.incorrectPlayers ||
+            [];
 
         if (
-            incorrect.length > 0
+            incorrectPlayers.length > 0
         ) {
 
-            incorrect.forEach(
+            const heading =
+                document.createElement(
+                    "h4"
+                );
+
+            heading.innerText =
+                "❌ Incorrect Answers";
+
+            box.appendChild(
+                heading
+            );
+
+            incorrectPlayers.forEach(
                 player => {
 
                     const div =
@@ -2349,23 +2663,32 @@ socket.on(
                         );
 
                     div.className =
-                        "danger";
+                        "invalidVote";
 
-                    div.innerHTML =
-                        `❌ ${escapeHTML(player)}
-                        answered incorrectly.`;
+                    div.innerHTML = `
+                        ❌
+                        <strong>
+                            ${escapeHTML(
+                                player
+                            )}
+                        </strong>
+                        answered incorrectly.
+                    `;
 
-                    box.appendChild(div);
+                    box.appendChild(
+                        div
+                    );
 
                 }
             );
 
         } else {
 
-            box.innerHTML =
-                `<p class="good">
-                ✅ Everyone answered correctly!
-                </p>`;
+            box.innerHTML = `
+                <div class="validVote">
+                    ✅ Everyone answered correctly!
+                </div>
+            `;
 
         }
 
@@ -2374,23 +2697,45 @@ socket.on(
                 "voteValidity"
             );
 
+        const votesValid =
+            data.votesValid === true;
+
         if (
-            data.votesValid
+            votesValid
         ) {
 
             validity.className =
                 "validVote";
 
-            validity.innerText =
-                "✅ Everyone answered correctly. The votes count.";
+            validity.innerHTML = `
+                ✅
+                <strong>
+                    Votes are valid.
+                </strong>
+
+                <br>
+
+                Everyone answered correctly,
+                so the votes will count.
+            `;
 
         } else {
 
             validity.className =
                 "invalidVote";
 
-            validity.innerText =
-                "⚠️ Someone answered incorrectly. Everyone loses their vote this round.";
+            validity.innerHTML = `
+                ⚠️
+                <strong>
+                    Votes invalidated.
+                </strong>
+
+                <br>
+
+                At least one player answered
+                incorrectly, so everyone loses
+                their vote this round.
+            `;
 
         }
 
@@ -2418,7 +2763,8 @@ socket.on(
         document.getElementById(
             "roundResultMessage"
         ).innerText =
-            data.message;
+            data.message ||
+            "The round is over.";
 
         const details =
             document.getElementById(
@@ -2431,15 +2777,16 @@ socket.on(
             data.eliminated
         ) {
 
-            details.innerHTML +=
-                `<p>
-                🍎 Eliminated:
-                <strong>
-                ${escapeHTML(
-                    data.eliminated
-                )}
-                </strong>
-                </p>`;
+            details.innerHTML += `
+                <p>
+                    🍎 Eliminated:
+                    <strong>
+                        ${escapeHTML(
+                            data.eliminated
+                        )}
+                    </strong>
+                </p>
+            `;
 
         }
 
@@ -2447,11 +2794,13 @@ socket.on(
             data.voteInvalid
         ) {
 
-            details.innerHTML +=
-                `<p class="danger">
-                The vote was invalidated because
-                a player answered incorrectly.
-                </p>`;
+            details.innerHTML += `
+                <p class="danger">
+                    ⚠️ The vote was invalidated.
+                    Everyone lost their vote because
+                    someone answered incorrectly.
+                </p>
+            `;
 
         }
 
@@ -2459,13 +2808,17 @@ socket.on(
             data.shielded
         ) {
 
-            details.innerHTML +=
-                `<p class="good">
-                🛡️ ${escapeHTML(
-                    data.shielded
-                )}
-                was protected by a Shield Vote.
-                </p>`;
+            details.innerHTML += `
+                <p class="good">
+                    🛡️
+                    <strong>
+                        ${escapeHTML(
+                            data.shielded
+                        )}
+                    </strong>
+                    was protected by a Shield Vote.
+                </p>
+            `;
 
         }
 
@@ -2479,6 +2832,19 @@ GAME OVER
 socket.on(
     "gameOver",
     data => {
+
+        if (
+            countdownInterval
+        ) {
+
+            clearInterval(
+                countdownInterval
+            );
+
+            countdownInterval =
+                null;
+
+        }
 
         hideAllScreens();
 
@@ -2539,7 +2905,24 @@ socket.on(
     "errorMessage",
     message => {
 
-        alert(message);
+        alert(
+            message
+        );
+
+        /*
+        If the server rejected an ability,
+        allow the player to try again.
+        */
+
+        if (
+            currentPhase ===
+            "ability"
+        ) {
+
+            hasUsedAbility =
+                false;
+
+        }
 
     }
 );
